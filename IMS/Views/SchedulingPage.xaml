@@ -150,7 +150,7 @@
                         <CollectionView ItemsSource="{Binding FilteredSchedulingItems}"
                                         SelectionMode="None">
                             <CollectionView.ItemTemplate>
-                                <DataTemplate x:DataType="viewmodels:DraggableSchedulingItem">
+                                <DataTemplate>
                                     <Border Padding="12,8"
                                             Margin="4,2"
                                             BackgroundColor="{StaticResource SurfaceContainer}"

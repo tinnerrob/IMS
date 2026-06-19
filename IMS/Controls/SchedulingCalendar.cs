@@ -143,7 +143,7 @@ public class SchedulingCalendar : ContentView
 
         _scrollView = new ScrollView
         {
-            Orientation = ScrollOrientation.Both,
+            Orientation = ScrollOrientation.Vertical,
             Content = _calendarGrid,
             BackgroundColor = Color.FromArgb("#FFFFFF")
         };

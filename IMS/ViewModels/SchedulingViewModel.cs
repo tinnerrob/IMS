@@ -108,7 +108,14 @@ public partial class SchedulingViewModel : ObservableObject
         _dataStore = dataStore;
         _fakeData = fakeData;
         _authService = authService;
-        Refresh();
+        try
+        {
+            Refresh();
+        }
+        catch
+        {
+            // Silently handle initialization errors
+        }
     }
 
     // ─── Core Data ───
