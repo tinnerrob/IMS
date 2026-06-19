@@ -23,6 +23,7 @@
             <converters:TabActiveConverter x:Key="TabActiveConverter" />
             <converters:TabTextConverter x:Key="TabTextConverter" />
             <converters:IsLaborConverter x:Key="IsLaborConverter" />
+            <converters:ExpandCollapseConverter x:Key="ExpandCollapseConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

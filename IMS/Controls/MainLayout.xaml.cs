@@ -1,3 +1,4 @@
+using IMS.Helpers;
 using IMS.Services;
 using IMS.Views;
 
@@ -5,7 +6,6 @@ namespace IMS.Controls;
 
 public partial class MainLayout : ContentView
 {
-    private readonly Dictionary<string, View> _pageViews = new();
     private string _currentPage = "Dashboard";
     private Button? _activeButton;
 
@@ -19,7 +19,24 @@ public partial class MainLayout : ContentView
     {
         InitializeComponent();
         UpdateUserInfo();
-        // Load the Dashboard page by default
+
+        // Only load the default page if auth is already available.
+        // If not, MainPage.OnAppearing() will trigger it after login navigation.
+        var authService = IPlatformApplication.Current?.Services?.GetService<IAuthService>();
+        if (authService?.IsAuthenticated == true)
+        {
+            LoadPage("Dashboard");
+            UpdateActiveButton("Dashboard");
+        }
+    }
+
+    /// <summary>
+    /// Called after login to load the default page.
+    /// This is separate from the constructor because Shell may create MainPage
+    /// before the user has logged in, and we need to wait until auth is set.
+    /// </summary>
+    public void LoadDefaultPage()
+    {
         LoadPage("Dashboard");
         UpdateActiveButton("Dashboard");
     }
@@ -79,15 +96,10 @@ public partial class MainLayout : ContentView
 
     private void LoadPage(string pageName)
     {
-        if (_pageViews.TryGetValue(pageName, out var existingView))
-        {
-            ContentArea.Content = existingView;
-            return;
-        }
-
         var services = IPlatformApplication.Current?.Services;
         if (services == null) return;
 
+        // Create a fresh page instance each time (pages are registered as Transient in DI).
         ContentPage? page = pageName switch
         {
             "Dashboard" => services.GetService<DashboardPage>(),
@@ -102,12 +114,30 @@ public partial class MainLayout : ContentView
             _ => null
         };
 
-        if (page?.Content != null)
+        if (page != null)
         {
-            // Preserve the BindingContext from the page when extracting its content
-            page.Content.BindingContext = page.BindingContext;
-            _pageViews[pageName] = page.Content;
-            ContentArea.Content = page.Content;
+            // ContentPage cannot be added as a child of a non-Page layout (Grid).
+            // We extract the page's content tree and host it in a ContentView.
+            // Since the page is never added to the visual tree, its Loaded event and
+            // OnAppearing() will never fire. We must manually trigger initialization.
+            ContentArea.Children.Clear();
+            
+            // Initialize the page's ViewModel via the IInitializablePage interface.
+            // This is needed because the page is not in the visual tree, so its
+            // lifecycle events (OnAppearing) won't fire naturally.
+            if (page is IInitializablePage initializable)
+            {
+                initializable.Initialize();
+            }
+            
+            var container = new ContentView
+            {
+                Content = page.Content,
+                VerticalOptions = LayoutOptions.Fill,
+                HorizontalOptions = LayoutOptions.Fill
+            };
+            
+            ContentArea.Children.Add(container);
         }
     }
 

@@ -53,11 +53,16 @@
 
     <!-- ─── Surface & Background ─── -->
     <Color x:Key="Background">#F8F9FA</Color>
+    <Color x:Key="PageBackground">#F8F9FA</Color>
     <Color x:Key="OnBackground">#1A1A2E</Color>
     <Color x:Key="Surface">#FFFFFF</Color>
     <Color x:Key="OnSurface">#1A1A2E</Color>
     <Color x:Key="SurfaceVariant">#F1F3F4</Color>
+    <Color x:Key="SurfaceContainer">#F1F3F4</Color>
     <Color x:Key="OnSurfaceVariant">#5F6368</Color>
+    <Color x:Key="TextPrimary">#1A1A2E</Color>
+    <Color x:Key="TextSecondary">#5F6368</Color>
+    <Color x:Key="BorderColor">#E8EAED</Color>
 
     <!-- ─── Surface Elevation Layers ─── -->
     <Color x:Key="SurfaceLowest">#FFFFFF</Color>

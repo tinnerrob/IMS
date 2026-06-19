@@ -12,8 +12,6 @@ public class DataStoreService : IDataStoreService
     {
         _fakeData = fakeData;
         _authService = authService;
-        // Ensure fake data is initialized before any data access
-        _fakeData.Initialize();
     }
 
     private Guid CurrentOrgId => _authService.CurrentOrganization?.OrgId ?? Guid.Empty;
@@ -203,27 +201,32 @@ public class DataStoreService : IDataStoreService
         return result;
     }
 
-    // Private helpers
+    // ─── Unified type registry ───
+    // Single source of truth for all type-to-data-set mappings
+
     private List<T> GetDataSet<T>()
     {
-        return typeof(T).Name switch
-        {
-            nameof(Organization) => _fakeData.Organizations as List<T> ?? new(),
-            nameof(TenantUser) => _fakeData.TenantUsers as List<T> ?? new(),
-            nameof(AssetCategory) => _fakeData.AssetCategories as List<T> ?? new(),
-            nameof(ProductCatalog) => _fakeData.ProductCatalog as List<T> ?? new(),
-            nameof(SerializedAsset) => _fakeData.SerializedAssets as List<T> ?? new(),
-            nameof(BulkQuantityPool) => _fakeData.BulkQuantityPools as List<T> ?? new(),
-            nameof(Customer) => _fakeData.Customers as List<T> ?? new(),
-            nameof(Project) => _fakeData.Projects as List<T> ?? new(),
-            nameof(ScheduleAllocation) => _fakeData.ScheduleAllocations as List<T> ?? new(),
-            nameof(LeaseTransactionLedger) => _fakeData.LeaseTransactions as List<T> ?? new(),
-            nameof(SmrServiceTicket) => _fakeData.SmrTickets as List<T> ?? new(),
-            nameof(SmrLaborLineItem) => _fakeData.SmrLaborLines as List<T> ?? new(),
-            nameof(SmrPartsUsageLedger) => _fakeData.SmrPartsUsage as List<T> ?? new(),
-            nameof(AuditLogEntry) => _fakeData.AuditLogs as List<T> ?? new(),
-            _ => new List<T>()
-        };
+        var data = GetDataSetInternal(typeof(T));
+        return data as List<T> ?? new List<T>();
+    }
+
+    private object GetDataSetInternal(Type type)
+    {
+        if (type == typeof(Organization)) return _fakeData.Organizations;
+        if (type == typeof(TenantUser)) return _fakeData.TenantUsers;
+        if (type == typeof(AssetCategory)) return _fakeData.AssetCategories;
+        if (type == typeof(ProductCatalog)) return _fakeData.ProductCatalog;
+        if (type == typeof(SerializedAsset)) return _fakeData.SerializedAssets;
+        if (type == typeof(BulkQuantityPool)) return _fakeData.BulkQuantityPools;
+        if (type == typeof(Customer)) return _fakeData.Customers;
+        if (type == typeof(Project)) return _fakeData.Projects;
+        if (type == typeof(ScheduleAllocation)) return _fakeData.ScheduleAllocations;
+        if (type == typeof(LeaseTransactionLedger)) return _fakeData.LeaseTransactions;
+        if (type == typeof(SmrServiceTicket)) return _fakeData.SmrTickets;
+        if (type == typeof(SmrLaborLineItem)) return _fakeData.SmrLaborLines;
+        if (type == typeof(SmrPartsUsageLedger)) return _fakeData.SmrPartsUsage;
+        if (type == typeof(AuditLogEntry)) return _fakeData.AuditLogs;
+        return new List<object>();
     }
 
     private Func<T, bool> FilterByOrg<T>()

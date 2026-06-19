@@ -15,6 +15,10 @@ public partial class InventoryViewModel : ObservableObject
     {
         _dataStore = dataStore;
         _authService = authService;
+    }
+
+    public void Initialize()
+    {
         Refresh();
     }
 

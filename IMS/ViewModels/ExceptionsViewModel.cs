@@ -15,6 +15,10 @@ public partial class ExceptionsViewModel : ObservableObject
     {
         _dataStore = dataStore;
         _authService = authService;
+    }
+
+    public void Initialize()
+    {
         Refresh();
     }
 

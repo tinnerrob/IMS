@@ -8,15 +8,50 @@ namespace IMS.Controls;
 /// </summary>
 public enum CalendarEventType
 {
-    Project,    // Top-level project/customer row
-    Category,   // Asset category allocation
-    Asset,      // Specific serialized asset
-    Labor       // Technician/labor allocation
+    Project,
+    Category,
+    Asset,
+    Labor
+}
+
+/// <summary>
+/// View mode for the calendar tree.
+/// </summary>
+public enum CalendarViewMode
+{
+    /// <summary>Customer → Project → Resource hierarchy</summary>
+    GroupByCustomer,
+    /// <summary>Category → Asset → Customer/Project hierarchy</summary>
+    GroupByResource
+}
+
+/// <summary>
+/// A node in the calendar tree hierarchy.
+/// </summary>
+public class CalendarTreeNode
+{
+    public string Id { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public int Depth { get; set; }
+    public bool IsExpanded { get; set; } = true;
+    public bool IsExpandable { get; set; }
+    public CalendarEventType NodeType { get; set; }
+    public List<CalendarTreeNode> Children { get; set; } = new();
+
+    // References back to source data
+    public Guid? CustomerId { get; set; }
+    public Guid? ProjectId { get; set; }
+    public Guid? CategoryId { get; set; }
+    public Guid? AssetId { get; set; }
+    public Guid? TechnicianId { get; set; }
+
+    // The allocation event bar data (only on leaf nodes)
+    public CalendarEvent? CalendarEvent { get; set; }
 }
 
 /// <summary>
 /// Represents a calendar event for display in the scheduling calendar.
-/// Supports multi-tier hierarchy: Project > Category/Asset/Labor.
 /// </summary>
 public class CalendarEvent
 {
@@ -54,14 +89,6 @@ public class CalendarEvent
 
     // Visual properties
     public bool IsExpanded { get; set; } = true;
-    public int IndentLevel => EventType switch
-    {
-        CalendarEventType.Project => 0,
-        CalendarEventType.Category => 1,
-        CalendarEventType.Asset => 2,
-        CalendarEventType.Labor => 1,
-        _ => 0
-    };
 
     public Color EventColor => EventType switch
     {
@@ -96,7 +123,8 @@ public class CalendarEvent
 
 /// <summary>
 /// A custom calendar view for multi-tier scheduling that displays allocations
-/// as events on a timeline grid with conflict detection, drag-to-resize, and click-to-edit.
+/// as events on a timeline grid with a hierarchical tree on the left.
+/// Supports two view modes: GroupByCustomer and GroupByResource.
 /// </summary>
 public class SchedulingCalendar : ContentView
 {
@@ -105,18 +133,39 @@ public class SchedulingCalendar : ContentView
     private DateTime _viewStartDate;
     private DateTime _viewEndDate;
     private List<CalendarEvent> _events = new();
+    private List<CalendarTreeNode> _treeNodes = new();
+    private List<CalendarTreeNode> _visibleRows = new();
+    private int _totalDays;
+    private bool _isRendering;
+    private bool _renderPending;
+
     private const int DayColumnWidth = 40;
-    private const int RowHeight = 48;
-    private const int ProjectRowHeight = 52;
+    private const int RowHeight = 44;
     private const int HeaderHeight = 44;
-    private const int TimelineWidth = 220;
+    private const int TreeColumnWidth = 280;
 
     // Drag resize state
     private CalendarEvent? _resizingEvent;
     private DateTime _resizeStartDate;
 
+    private CalendarViewMode _viewMode = CalendarViewMode.GroupByCustomer;
+
     /// <summary>
-    /// Fired when an asset/category/labor is dropped onto a specific date.
+    /// Gets or sets the current view mode.
+    /// </summary>
+    public CalendarViewMode ViewMode
+    {
+        get => _viewMode;
+        set
+        {
+            if (_viewMode == value) return;
+            _viewMode = value;
+            RenderCalendar();
+        }
+    }
+
+    /// <summary>
+    /// Fired when an item is dropped onto a specific date.
     /// </summary>
     public event EventHandler<(string DragData, DateTime DropDate)>? ItemDropped;
 
@@ -153,6 +202,7 @@ public class SchedulingCalendar : ContentView
 
     public void SetDateRange(DateTime start, DateTime end)
     {
+        if (_viewStartDate == start && _viewEndDate == end) return;
         _viewStartDate = start;
         _viewEndDate = end;
         RenderCalendar();
@@ -165,16 +215,23 @@ public class SchedulingCalendar : ContentView
         RenderCalendar();
     }
 
+    /// <summary>
+    /// Sets the tree nodes for the hierarchical view.
+    /// </summary>
+    public void SetTreeNodes(List<CalendarTreeNode> nodes)
+    {
+        _treeNodes = nodes;
+        RenderCalendar();
+    }
+
     private void DetectConflicts()
     {
-        // Reset conflicts
         foreach (var evt in _events)
         {
             evt.HasConflict = false;
             evt.ConflictDescription = null;
         }
 
-        // Group non-project events by resource (category or asset)
         var resourceGroups = new Dictionary<string, List<CalendarEvent>>();
 
         foreach (var evt in _events.Where(e => e.EventType != CalendarEventType.Project))
@@ -185,7 +242,6 @@ public class SchedulingCalendar : ContentView
             resourceGroups[key].Add(evt);
         }
 
-        // Check for overlapping dates within each resource group
         foreach (var group in resourceGroups.Values)
         {
             for (int i = 0; i < group.Count; i++)
@@ -207,54 +263,117 @@ public class SchedulingCalendar : ContentView
         }
     }
 
-    private void RenderCalendar()
+    private void BuildVisibleRows()
     {
-        _calendarGrid.Children.Clear();
-        _calendarGrid.RowDefinitions.Clear();
-        _calendarGrid.ColumnDefinitions.Clear();
+        _visibleRows = new List<CalendarTreeNode>();
 
-        var totalDays = (int)(_viewEndDate - _viewStartDate).TotalDays + 1;
-        if (totalDays <= 0) totalDays = 1;
-
-        // ─── Column Definitions ───
-        _calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(TimelineWidth)));
-        for (int i = 0; i < totalDays; i++)
+        void Flatten(List<CalendarTreeNode> nodes)
         {
-            _calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(DayColumnWidth)));
-        }
-
-        // ─── Row Definitions ───
-        _calendarGrid.RowDefinitions.Add(new RowDefinition(new GridLength(HeaderHeight)));
-
-        var visibleEvents = _events.Where(e => e.IsExpanded || e.EventType == CalendarEventType.Project).ToList();
-        var rowMap = new List<CalendarEvent>();
-
-        foreach (var evt in visibleEvents)
-        {
-            if (evt.EventType == CalendarEventType.Project)
+            foreach (var node in nodes)
             {
-                rowMap.Add(evt);
-            }
-            else if (evt.ParentEventId.HasValue)
-            {
-                var parent = visibleEvents.FirstOrDefault(p => p.EventId == evt.ParentEventId.Value);
-                if (parent != null && parent.IsExpanded)
+                _visibleRows.Add(node);
+                if (node.IsExpanded && node.Children.Count > 0)
                 {
-                    rowMap.Add(evt);
+                    Flatten(node.Children);
                 }
             }
         }
 
-        for (int i = 0; i < rowMap.Count; i++)
+        Flatten(_treeNodes);
+    }
+
+    private void RenderCalendar()
+    {
+        System.Diagnostics.Debug.WriteLine($"[SchedulingCalendar] RenderCalendar called, _isRendering={_isRendering}, _renderPending={_renderPending}");
+
+        // If a render is already in progress, mark that another is pending
+        if (_isRendering)
         {
-            var isProject = rowMap[i].EventType == CalendarEventType.Project;
-            _calendarGrid.RowDefinitions.Add(new RowDefinition(new GridLength(isProject ? ProjectRowHeight : RowHeight)));
+            _renderPending = true;
+            System.Diagnostics.Debug.WriteLine("[SchedulingCalendar] RenderCalendar: already rendering, marking pending");
+            return;
         }
 
-        // ─── Render Header Row ───
+        _isRendering = true;
+        _renderPending = false;
+
+        // Guard: don't render if the view hasn't been loaded yet
+        if (_calendarGrid == null)
+        {
+            System.Diagnostics.Debug.WriteLine("[SchedulingCalendar] RenderCalendar: _calendarGrid is null, aborting");
+            _isRendering = false;
+            return;
+        }
+
+        _totalDays = (int)(_viewEndDate - _viewStartDate).TotalDays + 1;
+        if (_totalDays <= 0) _totalDays = 1;
+
+        BuildVisibleRows();
+        System.Diagnostics.Debug.WriteLine($"[SchedulingCalendar] RenderCalendar: _totalDays={_totalDays}, _visibleRows.Count={_visibleRows.Count}");
+
+        // Schedule the UI update on the main thread
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("[SchedulingCalendar] BeginInvokeOnMainThread: starting render");
+                _calendarGrid.Children.Clear();
+                _calendarGrid.RowDefinitions.Clear();
+                _calendarGrid.ColumnDefinitions.Clear();
+
+                // Column definitions: Tree column + day columns
+                _calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(TreeColumnWidth)));
+                for (int i = 0; i < _totalDays; i++)
+                {
+                    _calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(DayColumnWidth)));
+                }
+
+                // Row definitions: Header + data rows
+                _calendarGrid.RowDefinitions.Add(new RowDefinition(new GridLength(HeaderHeight)));
+
+                for (int i = 0; i < _visibleRows.Count; i++)
+                {
+                    _calendarGrid.RowDefinitions.Add(new RowDefinition(new GridLength(RowHeight)));
+                }
+
+                // Render header
+                RenderHeader();
+
+                // Render tree rows + event bars
+                for (int r = 0; r < _visibleRows.Count; r++)
+                {
+                    RenderTreeRow(r);
+                }
+
+                // Today indicator
+                RenderTodayLine();
+                System.Diagnostics.Debug.WriteLine("[SchedulingCalendar] BeginInvokeOnMainThread: render complete");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SchedulingCalendar] RenderCalendar error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[SchedulingCalendar] StackTrace: {ex.StackTrace}");
+            }
+            finally
+            {
+                _isRendering = false;
+
+                // If another render was requested while we were rendering, do it now
+                if (_renderPending)
+                {
+                    System.Diagnostics.Debug.WriteLine("[SchedulingCalendar] RenderCalendar: pending render detected, re-rendering");
+                    MainThread.BeginInvokeOnMainThread(() => RenderCalendar());
+                }
+            }
+        });
+    }
+
+    private void RenderHeader()
+    {
+        // Corner label
         var cornerLabel = new Label
         {
-            Text = "Resource",
+            Text = _viewMode == CalendarViewMode.GroupByCustomer ? "Customer / Project" : "Resource",
             FontSize = 11,
             FontAttributes = FontAttributes.Bold,
             TextColor = Color.FromArgb("#5F6368"),
@@ -267,7 +386,7 @@ public class SchedulingCalendar : ContentView
         _calendarGrid.Children.Add(cornerLabel);
 
         // Day headers
-        for (int i = 0; i < totalDays; i++)
+        for (int i = 0; i < _totalDays; i++)
         {
             var date = _viewStartDate.AddDays(i);
             var isToday = date.Date == DateTime.Today;
@@ -306,8 +425,8 @@ public class SchedulingCalendar : ContentView
             dayGrid.Children.Add(dayLabel);
 
             // Drop target
-            var dropRecognizer = new DropGestureRecognizer();
             var capturedDate = date;
+            var dropRecognizer = new DropGestureRecognizer();
             dropRecognizer.DragOver += (s, e) =>
             {
                 e.AcceptedOperation = DataPackageOperation.Copy;
@@ -338,134 +457,121 @@ public class SchedulingCalendar : ContentView
             Grid.SetColumn(dayGrid, i + 1);
             _calendarGrid.Children.Add(dayGrid);
         }
-
-        // ─── Render Resource Rows ───
-        for (int r = 0; r < rowMap.Count; r++)
-        {
-            var evt = rowMap[r];
-            var rowIndex = r + 1;
-            var isProject = evt.EventType == CalendarEventType.Project;
-
-            // Row background
-            var rowBg = new BoxView
-            {
-                Color = isProject ? Color.FromArgb("#F3F0FF") :
-                        r % 2 == 0 ? Color.FromArgb("#FFFFFF") : Color.FromArgb("#F8F9FA"),
-                VerticalOptions = LayoutOptions.Fill,
-                HorizontalOptions = LayoutOptions.Fill
-            };
-            Grid.SetRow(rowBg, rowIndex);
-            Grid.SetColumn(rowBg, 0);
-            Grid.SetColumnSpan(rowBg, totalDays + 1);
-            _calendarGrid.Children.Add(rowBg);
-
-            // Resource label with indent
-            var indent = evt.IndentLevel * 16;
-            var resourceContent = new HorizontalStackLayout
-            {
-                Spacing = 6,
-                Padding = new Thickness(12 + indent, 0, 4, 0),
-                Children =
-                {
-                    new Label
-                    {
-                        Text = evt.TypeIcon,
-                        FontSize = 14,
-                        VerticalOptions = LayoutOptions.Center
-                    },
-                    new Label
-                    {
-                        Text = evt.Title,
-                        FontSize = isProject ? 13 : 11,
-                        FontAttributes = isProject ? FontAttributes.Bold : FontAttributes.None,
-                        TextColor = Color.FromArgb("#1A1A2E"),
-                        VerticalOptions = LayoutOptions.Center,
-                        LineBreakMode = LineBreakMode.TailTruncation
-                    }
-                }
-            };
-
-            // Expand/collapse toggle for projects
-            if (isProject)
-            {
-                var toggleBtn = new Label
-                {
-                    Text = evt.IsExpanded ? "▼" : "▶",
-                    FontSize = 10,
-                    TextColor = Color.FromArgb("#5F6368"),
-                    VerticalOptions = LayoutOptions.Center,
-                    Margin = new Thickness(0, 0, 4, 0)
-                };
-                resourceContent.Children.Insert(0, toggleBtn);
-
-                var tapToggle = new TapGestureRecognizer();
-                tapToggle.Tapped += (s, e) =>
-                {
-                    evt.IsExpanded = !evt.IsExpanded;
-                    RenderCalendar();
-                };
-                resourceContent.GestureRecognizers.Add(tapToggle);
-            }
-
-            var resourceFrame = new Frame
-            {
-                Padding = new Thickness(0),
-                BackgroundColor = Colors.Transparent,
-                CornerRadius = 0,
-                HasShadow = false,
-                BorderColor = Colors.Transparent,
-                Content = resourceContent
-            };
-            Grid.SetRow(resourceFrame, rowIndex);
-            Grid.SetColumn(resourceFrame, 0);
-            _calendarGrid.Children.Add(resourceFrame);
-
-            // Render event bar on the calendar
-            RenderEventBar(evt, rowIndex, totalDays);
-
-            // Horizontal border
-            var hBorder = new BoxView
-            {
-                Color = Color.FromArgb("#F1F3F4"),
-                HeightRequest = 1,
-                VerticalOptions = LayoutOptions.End,
-                HorizontalOptions = LayoutOptions.Fill
-            };
-            Grid.SetRow(hBorder, rowIndex);
-            Grid.SetColumn(hBorder, 0);
-            Grid.SetColumnSpan(hBorder, totalDays + 1);
-            _calendarGrid.Children.Add(hBorder);
-        }
-
-        // ─── Today indicator line ───
-        var todayOffset = (int)(DateTime.Today - _viewStartDate).TotalDays + 1;
-        if (todayOffset >= 1 && todayOffset <= totalDays)
-        {
-            var todayLine = new BoxView
-            {
-                Color = Color.FromArgb("#5B4DFF"),
-                WidthRequest = 2,
-                VerticalOptions = LayoutOptions.Fill,
-                HorizontalOptions = LayoutOptions.Center
-            };
-            Grid.SetRow(todayLine, 0);
-            Grid.SetColumn(todayLine, todayOffset);
-            Grid.SetRowSpan(todayLine, rowMap.Count + 1);
-            _calendarGrid.Children.Add(todayLine);
-        }
     }
 
-    private void RenderEventBar(CalendarEvent evt, int rowIndex, int totalDays)
+    private void RenderTreeRow(int r)
     {
-        if (evt.EventType == CalendarEventType.Project) return; // Projects are header rows, no bar
+        var node = _visibleRows[r];
+        var rowIndex = r + 1;
+        var isLeaf = node.CalendarEvent != null;
 
+        // Row background
+        var rowBg = new BoxView
+        {
+            Color = node.Depth == 0 ? Color.FromArgb("#F3F0FF") :
+                    r % 2 == 0 ? Color.FromArgb("#FFFFFF") : Color.FromArgb("#F8F9FA"),
+            VerticalOptions = LayoutOptions.Fill,
+            HorizontalOptions = LayoutOptions.Fill
+        };
+        Grid.SetRow(rowBg, rowIndex);
+        Grid.SetColumn(rowBg, 0);
+        Grid.SetColumnSpan(rowBg, _totalDays + 1);
+        _calendarGrid.Children.Add(rowBg);
+
+        // Tree label with indent
+        var indent = node.Depth * 20;
+        var labelContent = new HorizontalStackLayout
+        {
+            Spacing = 4,
+            Padding = new Thickness(8 + indent, 0, 4, 0),
+            Children =
+            {
+                new Label
+                {
+                    Text = node.Icon,
+                    FontSize = 12,
+                    VerticalOptions = LayoutOptions.Center
+                }
+            }
+        };
+
+        // Expand/collapse toggle
+        if (node.IsExpandable)
+        {
+            var toggleBtn = new Label
+            {
+                Text = node.IsExpanded ? "▼" : "▶",
+                FontSize = 9,
+                TextColor = Color.FromArgb("#5F6368"),
+                VerticalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, 0, 2, 0)
+            };
+            labelContent.Children.Insert(0, toggleBtn);
+
+            var capturedNode = node;
+            var tapToggle = new TapGestureRecognizer();
+            tapToggle.Tapped += (s, e) =>
+            {
+                capturedNode.IsExpanded = !capturedNode.IsExpanded;
+                RenderCalendar();
+            };
+            labelContent.GestureRecognizers.Add(tapToggle);
+        }
+
+        // Label text
+        var label = new Label
+        {
+            Text = node.Label,
+            FontSize = node.Depth <= 1 ? 12 : 11,
+            FontAttributes = node.Depth == 0 ? FontAttributes.Bold : FontAttributes.None,
+            TextColor = Color.FromArgb("#1A1A2E"),
+            VerticalOptions = LayoutOptions.Center,
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+        labelContent.Children.Add(label);
+
+        var resourceFrame = new Frame
+        {
+            Padding = new Thickness(0),
+            BackgroundColor = Colors.Transparent,
+            CornerRadius = 0,
+            HasShadow = false,
+            BorderColor = Colors.Transparent,
+            Content = labelContent
+        };
+        Grid.SetRow(resourceFrame, rowIndex);
+        Grid.SetColumn(resourceFrame, 0);
+        _calendarGrid.Children.Add(resourceFrame);
+
+        // Render event bar if this is a leaf node
+        if (isLeaf && node.CalendarEvent != null)
+        {
+            RenderEventBar(node.CalendarEvent, rowIndex);
+        }
+
+        // Horizontal border
+        var hBorder = new BoxView
+        {
+            Color = Color.FromArgb("#F1F3F4"),
+            HeightRequest = 1,
+            VerticalOptions = LayoutOptions.End,
+            HorizontalOptions = LayoutOptions.Fill
+        };
+        Grid.SetRow(hBorder, rowIndex);
+        Grid.SetColumn(hBorder, 0);
+        Grid.SetColumnSpan(hBorder, _totalDays + 1);
+        _calendarGrid.Children.Add(hBorder);
+    }
+
+    private void RenderEventBar(CalendarEvent evt, int rowIndex)
+    {
         var startCol = Math.Max(1, (int)(evt.StartDate - _viewStartDate).TotalDays + 1);
-        var endCol = Math.Min(totalDays, (int)(evt.EndDate - _viewStartDate).TotalDays + 1);
+        var endCol = Math.Min(_totalDays, (int)(evt.EndDate - _viewStartDate).TotalDays + 1);
         var span = Math.Max(1, endCol - startCol + 1);
 
-        if (startCol > totalDays || endCol < 1) return;
+        if (startCol > _totalDays || endCol < 1) return;
         if (startCol < 1) startCol = 1;
-        if (endCol > totalDays) endCol = totalDays;
+        if (endCol > _totalDays) endCol = _totalDays;
         span = endCol - startCol + 1;
 
         var eventBg = evt.HasConflict ? evt.ConflictBgColor : evt.EventBgColor;
@@ -510,8 +616,9 @@ public class SchedulingCalendar : ContentView
         };
 
         // Tap to edit
+        var capturedEvent = evt;
         var tapGesture = new TapGestureRecognizer();
-        tapGesture.Tapped += (s, e) => EventTapped?.Invoke(this, evt);
+        tapGesture.Tapped += (s, e) => EventTapped?.Invoke(this, capturedEvent);
         eventFrame.GestureRecognizers.Add(tapGesture);
 
         // Drag handles on left and right edges for resize
@@ -527,16 +634,16 @@ public class SchedulingCalendar : ContentView
         {
             if (e.StatusType == GestureStatus.Started)
             {
-                _resizingEvent = evt;
-                _resizeStartDate = evt.StartDate;
+                _resizingEvent = capturedEvent;
+                _resizeStartDate = capturedEvent.StartDate;
             }
             else if (e.StatusType == GestureStatus.Completed && _resizingEvent != null)
             {
                 var daysDelta = (int)(e.TotalX / DayColumnWidth);
                 var newStart = _resizeStartDate.AddDays(daysDelta);
-                if (newStart < evt.EndDate)
+                if (newStart < capturedEvent.EndDate)
                 {
-                    EventResized?.Invoke(this, (evt, newStart, evt.EndDate));
+                    EventResized?.Invoke(this, (capturedEvent, newStart, capturedEvent.EndDate));
                 }
                 _resizingEvent = null;
             }
@@ -555,23 +662,22 @@ public class SchedulingCalendar : ContentView
         {
             if (e.StatusType == GestureStatus.Started)
             {
-                _resizingEvent = evt;
-                _resizeStartDate = evt.EndDate;
+                _resizingEvent = capturedEvent;
+                _resizeStartDate = capturedEvent.EndDate;
             }
             else if (e.StatusType == GestureStatus.Completed && _resizingEvent != null)
             {
                 var daysDelta = (int)(e.TotalX / DayColumnWidth);
                 var newEnd = _resizeStartDate.AddDays(daysDelta);
-                if (newEnd > evt.StartDate)
+                if (newEnd > capturedEvent.StartDate)
                 {
-                    EventResized?.Invoke(this, (evt, evt.StartDate, newEnd));
+                    EventResized?.Invoke(this, (capturedEvent, capturedEvent.StartDate, newEnd));
                 }
                 _resizingEvent = null;
             }
         };
         rightHandle.GestureRecognizers.Add(rightPan);
 
-        // Add resize handles as overlay
         var overlayGrid = new Grid
         {
             Children = { eventFrame, leftHandle, rightHandle }
@@ -583,15 +689,22 @@ public class SchedulingCalendar : ContentView
         _calendarGrid.Children.Add(overlayGrid);
     }
 
-    private List<string> GetUniqueResources()
+    private void RenderTodayLine()
     {
-        var resources = new List<string>();
-        foreach (var evt in _events.Where(e => e.EventType != CalendarEventType.Project))
+        var todayOffset = (int)(DateTime.Today - _viewStartDate).TotalDays + 1;
+        if (todayOffset >= 1 && todayOffset <= _totalDays)
         {
-            var key = evt.CategoryName ?? evt.AssetSerial ?? evt.TechnicianName ?? "unknown";
-            if (!resources.Contains(key))
-                resources.Add(key);
+            var todayLine = new BoxView
+            {
+                Color = Color.FromArgb("#5B4DFF"),
+                WidthRequest = 2,
+                VerticalOptions = LayoutOptions.Fill,
+                HorizontalOptions = LayoutOptions.Center
+            };
+            Grid.SetRow(todayLine, 0);
+            Grid.SetColumn(todayLine, todayOffset);
+            Grid.SetRowSpan(todayLine, _visibleRows.Count + 1);
+            _calendarGrid.Children.Add(todayLine);
         }
-        return resources;
     }
 }

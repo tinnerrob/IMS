@@ -1,9 +1,10 @@
 using IMS.Controls;
+using IMS.Helpers;
 using IMS.ViewModels;
 
 namespace IMS.Views;
 
-public partial class SchedulingPage : ContentPage
+public partial class SchedulingPage : ContentPage, IInitializablePage
 {
     private readonly SchedulingViewModel _viewModel;
     private bool _isInitialized;
@@ -12,92 +13,119 @@ public partial class SchedulingPage : ContentPage
     {
         InitializeComponent();
         BindingContext = _viewModel = viewModel;
-
-        // Wire up calendar events after the content is loaded
-        // (The page itself may not be added to visual tree since MainLayout extracts Content)
-        Loaded += OnPageLoaded;
-        // Also try to initialize immediately as a fallback
-        InitializeCalendar();
     }
 
-    private void OnPageLoaded(object? sender, EventArgs e)
+    protected override void OnAppearing()
     {
-        Loaded -= OnPageLoaded;
+        base.OnAppearing();
         InitializeCalendar();
     }
 
-    private void InitializeCalendar()
+    public void Initialize()
     {
         if (_isInitialized) return;
         _isInitialized = true;
 
         try
         {
+            // Initialize the ViewModel data
+            _viewModel.Initialize();
+
             // Initialize calendar with current data
             CalendarControl.SetDateRange(_viewModel.ViewStartDate, _viewModel.ViewEndDate);
             CalendarControl.SetEvents(_viewModel.CalendarEvents);
+            CalendarControl.SetTreeNodes(_viewModel.CalendarTreeNodes);
 
             // Listen for property changes to update calendar
-            _viewModel.PropertyChanged += (s, args) =>
-            {
-                try
-                {
-                    if (args.PropertyName == nameof(SchedulingViewModel.CalendarEvents))
-                    {
-                        CalendarControl.SetEvents(_viewModel.CalendarEvents);
-                    }
-                    if (args.PropertyName == nameof(SchedulingViewModel.ViewStartDate) ||
-                        args.PropertyName == nameof(SchedulingViewModel.ViewEndDate))
-                    {
-                        CalendarControl.SetDateRange(_viewModel.ViewStartDate, _viewModel.ViewEndDate);
-                    }
-                }
-                catch
-                {
-                    // Silently handle calendar update errors
-                }
-            };
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
             // Handle event taps from calendar (click to edit)
-            CalendarControl.EventTapped += (s, calendarEvent) =>
-            {
-                _viewModel.SelectEventCommand.Execute(calendarEvent);
-            };
+            CalendarControl.EventTapped += OnCalendarEventTapped;
 
             // Handle drops from resource list onto calendar
-            CalendarControl.ItemDropped += (s, dropInfo) =>
-            {
-                _viewModel.HandleDrop(dropInfo.DragData, dropInfo.DropDate);
-            };
+            CalendarControl.ItemDropped += OnCalendarItemDropped;
 
             // Handle event resize (drag edges to expand/contract)
-            CalendarControl.EventResized += (s, resizeInfo) =>
+            CalendarControl.EventResized += OnCalendarEventResized;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SchedulingPage] InitializeCalendar error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[SchedulingPage] StackTrace: {ex.StackTrace}");
+        }
+    }
+
+    private void InitializeCalendar()
+    {
+        // This is now handled by the Initialize() method
+        // Kept for backward compatibility with OnAppearing
+        Initialize();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        try
+        {
+            switch (args.PropertyName)
             {
-                _viewModel.HandleEventResized(resizeInfo.Event, resizeInfo.NewStart, resizeInfo.NewEnd);
-            };
+                case nameof(SchedulingViewModel.CalendarEvents):
+                    CalendarControl.SetEvents(_viewModel.CalendarEvents);
+                    break;
+                case nameof(SchedulingViewModel.CalendarTreeNodes):
+                    CalendarControl.SetTreeNodes(_viewModel.CalendarTreeNodes);
+                    break;
+                case nameof(SchedulingViewModel.ViewStartDate):
+                case nameof(SchedulingViewModel.ViewEndDate):
+                    CalendarControl.SetDateRange(_viewModel.ViewStartDate, _viewModel.ViewEndDate);
+                    break;
+                case nameof(SchedulingViewModel.CalendarViewMode):
+                    CalendarControl.ViewMode = _viewModel.CalendarViewMode;
+                    break;
+            }
         }
         catch
         {
-            // Silently handle initialization errors
+            // Silently handle calendar update errors
         }
+    }
+
+    private void OnCalendarEventTapped(object? sender, CalendarEvent calendarEvent)
+    {
+        _viewModel.SelectEventCommand.Execute(calendarEvent);
+    }
+
+    private void OnCalendarItemDropped(object? sender, (string DragData, DateTime DropDate) dropInfo)
+    {
+        _viewModel.HandleDrop(dropInfo.DragData, dropInfo.DropDate);
+    }
+
+    private void OnCalendarEventResized(object? sender, (CalendarEvent Event, DateTime NewStart, DateTime NewEnd) resizeInfo)
+    {
+        _viewModel.HandleEventResized(resizeInfo.Event, resizeInfo.NewStart, resizeInfo.NewEnd);
     }
 
     /// <summary>
     /// Called when a drag starts from the resource list.
-    /// Sets the drag data to the DragData property of the DraggableSchedulingItem.
+    /// Uses the BindingContext of the item to get drag data.
     /// </summary>
     private void OnDragStarting(object? sender, DragStartingEventArgs e)
     {
         try
         {
-            if (sender is GestureRecognizer gesture &&
-                gesture.Parent is Label label &&
-                label.Parent is Grid grid &&
-                grid.Parent is Border border &&
-                border.BindingContext is DraggableSchedulingItem item)
+            // Walk up the visual tree to find the item's BindingContext
+            if (sender is GestureRecognizer gesture)
             {
-                e.Data.Text = item.DragData;
-                e.Data.Properties["SchedulingItem"] = item;
+                var element = gesture.Parent;
+                while (element != null)
+                {
+                    if (element.BindingContext is DraggableSchedulingItem item)
+                    {
+                        e.Data.Text = item.DragData;
+                        e.Data.Properties["SchedulingItem"] = item;
+                        return;
+                    }
+                    element = element.Parent;
+                }
             }
         }
         catch
@@ -107,12 +135,21 @@ public partial class SchedulingPage : ContentPage
     }
 
     /// <summary>
+    /// Called when the customer/project search text changes.
+    /// </summary>
+    private void OnCustomerSearchChanged(object? sender, TextChangedEventArgs e)
+    {
+        _viewModel.CustomerSearchText = e.NewTextValue;
+        _viewModel.FilterCustomerProjectsCommand.Execute(null);
+    }
+
+    /// <summary>
     /// Called when the resource search text changes.
     /// </summary>
-    private void OnAssetSearchChanged(object? sender, TextChangedEventArgs e)
+    private void OnResourceSearchChanged(object? sender, TextChangedEventArgs e)
     {
-        _viewModel.AssetSearchText = e.NewTextValue;
-        _viewModel.FilterSchedulingItemsCommand.Execute(null);
+        _viewModel.ResourceSearchText = e.NewTextValue;
+        _viewModel.FilterResourcesCommand.Execute(null);
     }
 
     /// <summary>

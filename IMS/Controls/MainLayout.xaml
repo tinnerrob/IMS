@@ -126,9 +126,9 @@
              CONTENT AREA
              Clean white background for page content.
              ═══════════════════════════════════════════════════════ -->
-        <Grid Grid.Column="1" BackgroundColor="{StaticResource Background}">
+        <Grid Grid.Column="1" x:Name="ContentArea"
+              BackgroundColor="{StaticResource Background}">
             <!-- Page content will be swapped here -->
-            <ContentView x:Name="ContentArea" />
         </Grid>
 
         <!-- Separator -->

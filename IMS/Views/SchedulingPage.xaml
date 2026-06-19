@@ -11,14 +11,14 @@
           Padding="0">
 
         <!-- ════════════════════════════════════════════ -->
-        <!-- LEFT PANEL: Resource Library (Categories/Assets/Labor) -->
+        <!-- LEFT PANEL: Drag Source Library              -->
         <!-- ════════════════════════════════════════════ -->
         <Border Grid.Column="0"
                 BackgroundColor="{StaticResource Surface}"
                 Stroke="{StaticResource BorderColor}"
                 StrokeThickness="0"
                 Padding="0">
-            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto"
+            <Grid RowDefinitions="Auto,*,Auto"
                   Padding="0">
 
                 <!-- Panel Header -->
@@ -36,163 +36,312 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Project Selector -->
-                <Border Grid.Row="1"
-                        BackgroundColor="{StaticResource Surface}"
-                        Padding="12,10"
-                        Stroke="{StaticResource BorderColor}"
-                        StrokeThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="*,Auto"
-                          RowDefinitions="Auto,Auto"
-                          ColumnSpacing="8"
-                          RowSpacing="4">
+                <!-- Scrollable content area -->
+                <ScrollView Grid.Row="1"
+                            BackgroundColor="{StaticResource Surface}">
+                    <VerticalStackLayout Spacing="0"
+                                         Padding="0">
 
-                        <Label Grid.Row="0" Grid.Column="0"
-                               Text="Selected Project"
-                               FontSize="10"
-                               TextColor="{StaticResource TextSecondary}" />
-
-                        <Border Grid.Row="1" Grid.Column="0"
-                                BackgroundColor="{StaticResource SurfaceContainer}"
+                        <!-- ════════════════════════════════════════ -->
+                        <!-- SECTION 1: CUSTOMERS &amp; PROJECTS         -->
+                        <!-- ════════════════════════════════════════ -->
+                        <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                Padding="12,10"
                                 Stroke="{StaticResource BorderColor}"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 8"
-                                Padding="12,8">
-                            <Picker x:Name="ProjectPicker"
-                                    Title="Select a project..."
-                                    FontSize="13"
-                                    TextColor="{StaticResource TextPrimary}"
-                                    TitleColor="{StaticResource TextSecondary}"
-                                    ItemsSource="{Binding Projects}"
-                                    ItemDisplayBinding="{Binding ProjectName}"
-                                    SelectedItem="{Binding SelectedProject, Mode=TwoWay}" />
+                                StrokeThickness="0,0,0,1">
+                            <Label Text="CUSTOMERS &amp; PROJECTS"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
                         </Border>
 
-                        <Button Grid.Row="1" Grid.Column="1"
-                                Text="✕"
-                                FontSize="14"
-                                TextColor="{StaticResource TextSecondary}"
-                                BackgroundColor="Transparent"
-                                WidthRequest="36"
-                                HeightRequest="36"
-                                Padding="0"
-                                CornerRadius="18"
-                                Command="{Binding ClearProjectCommand}" />
-                    </Grid>
-                </Border>
+                        <!-- Customer/Project Search -->
+                        <Border BackgroundColor="{StaticResource Surface}"
+                                Padding="12,8"
+                                Stroke="{StaticResource BorderColor}"
+                                StrokeThickness="0,0,0,1">
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Entry Placeholder="Search customers..."
+                                       PlaceholderColor="{StaticResource TextSecondary}"
+                                       Text="{Binding CustomerSearchText, Mode=TwoWay}"
+                                       TextChanged="OnCustomerSearchChanged"
+                                       FontSize="13"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       BackgroundColor="Transparent" />
+                            </Border>
+                        </Border>
 
-                <!-- Search Bar -->
-                <Border Grid.Row="2"
-                        BackgroundColor="{StaticResource Surface}"
-                        Padding="12,8"
-                        Stroke="{StaticResource BorderColor}"
-                        StrokeThickness="0,0,0,1">
-                    <Border BackgroundColor="{StaticResource SurfaceContainer}"
-                            Stroke="{StaticResource BorderColor}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 8"
-                            Padding="12,8">
-                        <Entry Placeholder="Search resources..."
-                               PlaceholderColor="{StaticResource TextSecondary}"
-                               Text="{Binding AssetSearchText, Mode=TwoWay}"
-                               TextChanged="OnAssetSearchChanged"
-                               FontSize="13"
-                               TextColor="{StaticResource TextPrimary}"
-                               BackgroundColor="Transparent" />
-                    </Border>
-                </Border>
-
-                <!-- Tab Buttons: Categories | Assets | Labor -->
-                <Grid Grid.Row="3"
-                      RowDefinitions="Auto,*"
-                      Padding="0">
-
-                    <!-- Tab bar -->
-                    <HorizontalStackLayout Grid.Row="0"
-                                           Spacing="0"
-                                           Padding="0"
-                                           BackgroundColor="{StaticResource Surface}">
-                        <Button Text="Categories"
-                                FontSize="11"
-                                FontAttributes="Bold"
-                                Padding="12,10"
-                                HeightRequest="38"
-                                CornerRadius="0"
-                                BackgroundColor="{Binding SchedulingTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=Categories}"
-                                TextColor="{Binding SchedulingTab, Converter={StaticResource TabTextConverter}, ConverterParameter=Categories}"
-                                Command="{Binding SwitchSchedulingTabCommand}"
-                                CommandParameter="Categories" />
-                        <Button Text="Assets"
-                                FontSize="11"
-                                FontAttributes="Bold"
-                                Padding="12,10"
-                                HeightRequest="38"
-                                CornerRadius="0"
-                                BackgroundColor="{Binding SchedulingTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=Assets}"
-                                TextColor="{Binding SchedulingTab, Converter={StaticResource TabTextConverter}, ConverterParameter=Assets}"
-                                Command="{Binding SwitchSchedulingTabCommand}"
-                                CommandParameter="Assets" />
-                        <Button Text="Labor"
-                                FontSize="11"
-                                FontAttributes="Bold"
-                                Padding="12,10"
-                                HeightRequest="38"
-                                CornerRadius="0"
-                                BackgroundColor="{Binding SchedulingTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=Labor}"
-                                TextColor="{Binding SchedulingTab, Converter={StaticResource TabTextConverter}, ConverterParameter=Labor}"
-                                Command="{Binding SwitchSchedulingTabCommand}"
-                                CommandParameter="Labor" />
-                    </HorizontalStackLayout>
-
-                    <!-- Scrollable item list -->
-                    <ScrollView Grid.Row="1"
-                                BackgroundColor="{StaticResource Surface}">
-                        <CollectionView ItemsSource="{Binding FilteredSchedulingItems}"
-                                        SelectionMode="None">
+                        <!-- Customer/Project List -->
+                        <CollectionView ItemsSource="{Binding FilteredCustomerProjectItems}"
+                                        SelectionMode="None"
+                                        HeightRequest="300">
                             <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Padding="12,8"
-                                            Margin="4,2"
-                                            BackgroundColor="{StaticResource SurfaceContainer}"
-                                            Stroke="{StaticResource BorderColor}"
-                                            StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 8">
-                                        <Grid ColumnDefinitions="Auto,*,Auto"
-                                              ColumnSpacing="10">
-                                            <!-- Status indicator dot -->
-                                            <Ellipse Grid.Column="0"
-                                                     WidthRequest="8"
-                                                     HeightRequest="8"
-                                                     Fill="{Binding StatusColor}"
-                                                     VerticalOptions="Center" />
-
-                                            <!-- Name and subtitle -->
-                                            <VerticalStackLayout Grid.Column="1"
-                                                                 Spacing="1"
-                                                                 VerticalOptions="Center">
-                                                <Label Text="{Binding DisplayName}"
-                                                       FontSize="13"
-                                                       FontAttributes="Bold"
-                                                       TextColor="{StaticResource TextPrimary}"
-                                                       LineBreakMode="TailTruncation" />
-                                                <Label Text="{Binding Subtitle}"
+                                <DataTemplate x:DataType="viewmodels:DraggableSchedulingItem">
+                                    <VerticalStackLayout Spacing="0">
+                                        <!-- Customer or Project item -->
+                                        <Border Padding="12,8"
+                                                Margin="4,2"
+                                                BackgroundColor="{StaticResource SurfaceContainer}"
+                                                Stroke="{StaticResource BorderColor}"
+                                                StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 8">
+                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+                                                  ColumnSpacing="8">
+                                                <!-- Expand/collapse toggle -->
+                                                <Label Grid.Column="0"
+                                                       Text="{Binding IsExpanded, Converter={StaticResource ExpandCollapseConverter}}"
                                                        FontSize="10"
-                                                       TextColor="{StaticResource TextSecondary}" />
-                                            </VerticalStackLayout>
+                                                       TextColor="{StaticResource TextSecondary}"
+                                                       VerticalOptions="Center"
+                                                       IsVisible="{Binding IsExpandable}">
+                                                    <Label.GestureRecognizers>
+                                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:SchedulingViewModel}}, Path=ToggleCustomerProjectExpandCommand}"
+                                                                              CommandParameter="{Binding}" />
+                                                    </Label.GestureRecognizers>
+                                                </Label>
 
-                                            <!-- Drag handle -->
-                                            <Label Grid.Column="2"
-                                                   Text="⠿"
-                                                   FontSize="18"
-                                                   TextColor="{StaticResource TextSecondary}"
-                                                   VerticalOptions="Center">
-                                                <Label.GestureRecognizers>
-                                                    <DragGestureRecognizer CanDrag="True"
-                                                                           DragStarting="OnDragStarting" />
-                                                </Label.GestureRecognizers>
-                                            </Label>
-                                        </Grid>
-                                    </Border>
+                                                <!-- Status indicator dot -->
+                                                <Ellipse Grid.Column="1"
+                                                         WidthRequest="8"
+                                                         HeightRequest="8"
+                                                         Fill="{Binding StatusColor}"
+                                                         VerticalOptions="Center" />
+
+                                                <!-- Name and subtitle -->
+                                                <VerticalStackLayout Grid.Column="2"
+                                                                     Spacing="1"
+                                                                     VerticalOptions="Center">
+                                                    <Label Text="{Binding DisplayName}"
+                                                           FontSize="13"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{StaticResource TextPrimary}"
+                                                           LineBreakMode="TailTruncation" />
+                                                    <Label Text="{Binding Subtitle}"
+                                                           FontSize="10"
+                                                           TextColor="{StaticResource TextSecondary}" />
+                                                </VerticalStackLayout>
+
+                                                <!-- Drag handle -->
+                                                <Label Grid.Column="3"
+                                                       Text="⠿"
+                                                       FontSize="18"
+                                                       TextColor="{StaticResource TextSecondary}"
+                                                       VerticalOptions="Center">
+                                                    <Label.GestureRecognizers>
+                                                        <DragGestureRecognizer CanDrag="True"
+                                                                               DragStarting="OnDragStarting" />
+                                                    </Label.GestureRecognizers>
+                                                </Label>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Children (projects) when expanded -->
+                                        <CollectionView ItemsSource="{Binding Children}"
+                                                        SelectionMode="None"
+                                                        IsVisible="{Binding IsExpanded}">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate x:DataType="viewmodels:DraggableSchedulingItem">
+                                                    <Border Padding="12,8"
+                                                            Margin="24,2,4,2"
+                                                            BackgroundColor="{StaticResource Surface}"
+                                                            Stroke="{StaticResource BorderColor}"
+                                                            StrokeThickness="1"
+                                                            StrokeShape="RoundRectangle 8">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto"
+                                                              ColumnSpacing="8">
+                                                            <Ellipse Grid.Column="0"
+                                                                     WidthRequest="8"
+                                                                     HeightRequest="8"
+                                                                     Fill="{Binding StatusColor}"
+                                                                     VerticalOptions="Center" />
+                                                            <VerticalStackLayout Grid.Column="1"
+                                                                                 Spacing="1"
+                                                                                 VerticalOptions="Center">
+                                                                <Label Text="{Binding DisplayName}"
+                                                                       FontSize="12"
+                                                                       TextColor="{StaticResource TextPrimary}"
+                                                                       LineBreakMode="TailTruncation" />
+                                                                <Label Text="{Binding Subtitle}"
+                                                                       FontSize="9"
+                                                                       TextColor="{StaticResource TextSecondary}" />
+                                                            </VerticalStackLayout>
+                                                            <Label Grid.Column="2"
+                                                                   Text="⠿"
+                                                                   FontSize="18"
+                                                                   TextColor="{StaticResource TextSecondary}"
+                                                                   VerticalOptions="Center">
+                                                                <Label.GestureRecognizers>
+                                                                    <DragGestureRecognizer CanDrag="True"
+                                                                                           DragStarting="OnDragStarting" />
+                                                                </Label.GestureRecognizers>
+                                                            </Label>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                            <CollectionView.EmptyView>
+                                <VerticalStackLayout Padding="20"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Center">
+                                    <Label Text="No customers found"
+                                           FontSize="14"
+                                           TextColor="{StaticResource TextSecondary}"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+
+                        <!-- ════════════════════════════════════════ -->
+                        <!-- SECTION 2: RESOURCES                    -->
+                        <!-- ════════════════════════════════════════ -->
+                        <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                Padding="12,10"
+                                Stroke="{StaticResource BorderColor}"
+                                StrokeThickness="0,0,0,1">
+                            <Label Text="RESOURCES"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                        </Border>
+
+                        <!-- Resource Search -->
+                        <Border BackgroundColor="{StaticResource Surface}"
+                                Padding="12,8"
+                                Stroke="{StaticResource BorderColor}"
+                                StrokeThickness="0,0,0,1">
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Entry Placeholder="Search resources..."
+                                       PlaceholderColor="{StaticResource TextSecondary}"
+                                       Text="{Binding ResourceSearchText, Mode=TwoWay}"
+                                       TextChanged="OnResourceSearchChanged"
+                                       FontSize="13"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       BackgroundColor="Transparent" />
+                            </Border>
+                        </Border>
+
+                        <!-- Resource List -->
+                        <CollectionView ItemsSource="{Binding FilteredResourceItems}"
+                                        SelectionMode="None"
+                                        HeightRequest="300">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="viewmodels:DraggableSchedulingItem">
+                                    <VerticalStackLayout Spacing="0">
+                                        <!-- Category or Labor item -->
+                                        <Border Padding="12,8"
+                                                Margin="4,2"
+                                                BackgroundColor="{StaticResource SurfaceContainer}"
+                                                Stroke="{StaticResource BorderColor}"
+                                                StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 8">
+                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto"
+                                                  ColumnSpacing="8">
+                                                <!-- Expand/collapse toggle -->
+                                                <Label Grid.Column="0"
+                                                       Text="{Binding IsExpanded, Converter={StaticResource ExpandCollapseConverter}}"
+                                                       FontSize="10"
+                                                       TextColor="{StaticResource TextSecondary}"
+                                                       VerticalOptions="Center"
+                                                       IsVisible="{Binding IsExpandable}">
+                                                    <Label.GestureRecognizers>
+                                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:SchedulingViewModel}}, Path=ToggleResourceExpandCommand}"
+                                                                              CommandParameter="{Binding}" />
+                                                    </Label.GestureRecognizers>
+                                                </Label>
+
+                                                <!-- Status indicator dot -->
+                                                <Ellipse Grid.Column="1"
+                                                         WidthRequest="8"
+                                                         HeightRequest="8"
+                                                         Fill="{Binding StatusColor}"
+                                                         VerticalOptions="Center" />
+
+                                                <!-- Name and subtitle -->
+                                                <VerticalStackLayout Grid.Column="2"
+                                                                     Spacing="1"
+                                                                     VerticalOptions="Center">
+                                                    <Label Text="{Binding DisplayName}"
+                                                           FontSize="13"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{StaticResource TextPrimary}"
+                                                           LineBreakMode="TailTruncation" />
+                                                    <Label Text="{Binding Subtitle}"
+                                                           FontSize="10"
+                                                           TextColor="{StaticResource TextSecondary}" />
+                                                </VerticalStackLayout>
+
+                                                <!-- Drag handle -->
+                                                <Label Grid.Column="3"
+                                                       Text="⠿"
+                                                       FontSize="18"
+                                                       TextColor="{StaticResource TextSecondary}"
+                                                       VerticalOptions="Center">
+                                                    <Label.GestureRecognizers>
+                                                        <DragGestureRecognizer CanDrag="True"
+                                                                               DragStarting="OnDragStarting" />
+                                                    </Label.GestureRecognizers>
+                                                </Label>
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- Children (assets) when expanded -->
+                                        <CollectionView ItemsSource="{Binding Children}"
+                                                        SelectionMode="None"
+                                                        IsVisible="{Binding IsExpanded}">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate x:DataType="viewmodels:DraggableSchedulingItem">
+                                                    <Border Padding="12,8"
+                                                            Margin="24,2,4,2"
+                                                            BackgroundColor="{StaticResource Surface}"
+                                                            Stroke="{StaticResource BorderColor}"
+                                                            StrokeThickness="1"
+                                                            StrokeShape="RoundRectangle 8">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto"
+                                                              ColumnSpacing="8">
+                                                            <Ellipse Grid.Column="0"
+                                                                     WidthRequest="8"
+                                                                     HeightRequest="8"
+                                                                     Fill="{Binding StatusColor}"
+                                                                     VerticalOptions="Center" />
+                                                            <VerticalStackLayout Grid.Column="1"
+                                                                                 Spacing="1"
+                                                                                 VerticalOptions="Center">
+                                                                <Label Text="{Binding DisplayName}"
+                                                                       FontSize="12"
+                                                                       TextColor="{StaticResource TextPrimary}"
+                                                                       LineBreakMode="TailTruncation" />
+                                                                <Label Text="{Binding Subtitle}"
+                                                                       FontSize="9"
+                                                                       TextColor="{StaticResource TextSecondary}" />
+                                                            </VerticalStackLayout>
+                                                            <Label Grid.Column="2"
+                                                                   Text="⠿"
+                                                                   FontSize="18"
+                                                                   TextColor="{StaticResource TextSecondary}"
+                                                                   VerticalOptions="Center">
+                                                                <Label.GestureRecognizers>
+                                                                    <DragGestureRecognizer CanDrag="True"
+                                                                                           DragStarting="OnDragStarting" />
+                                                                </Label.GestureRecognizers>
+                                                            </Label>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </VerticalStackLayout>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>
                             <CollectionView.EmptyView>
@@ -206,11 +355,11 @@
                                 </VerticalStackLayout>
                             </CollectionView.EmptyView>
                         </CollectionView>
-                    </ScrollView>
-                </Grid>
+                    </VerticalStackLayout>
+                </ScrollView>
 
                 <!-- Bottom stats bar -->
-                <Border Grid.Row="4"
+                <Border Grid.Row="2"
                         BackgroundColor="{StaticResource SurfaceContainer}"
                         Padding="12,10"
                         Stroke="{StaticResource BorderColor}"
@@ -240,7 +389,7 @@
         </Border>
 
         <!-- ════════════════════════════════════════════ -->
-        <!-- CENTER: Calendar -->
+        <!-- CENTER: Calendar                             -->
         <!-- ════════════════════════════════════════════ -->
         <Grid Grid.Column="1"
               RowDefinitions="Auto,*"
@@ -253,7 +402,7 @@
                     Padding="12,8"
                     Stroke="{StaticResource BorderColor}"
                     StrokeThickness="0,0,0,1">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto"
                       ColumnSpacing="8">
 
                     <!-- Date range display -->
@@ -316,7 +465,18 @@
                             TextColor="White"
                             Command="{Binding GoToTodayCommand}" />
 
+                    <!-- View Mode Toggle -->
                     <Button Grid.Column="5"
+                            Text="{Binding ViewModeLabel}"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            Padding="12,6"
+                            CornerRadius="8"
+                            BackgroundColor="{StaticResource Tertiary}"
+                            TextColor="White"
+                            Command="{Binding ToggleViewModeCommand}" />
+
+                    <Button Grid.Column="6"
                             Text="Refresh"
                             FontSize="11"
                             Padding="12,6"
@@ -334,7 +494,7 @@
         </Grid>
 
         <!-- ════════════════════════════════════════════ -->
-        <!-- RIGHT PANEL: Event Details / Edit -->
+        <!-- RIGHT PANEL: Event Details / Edit            -->
         <!-- ════════════════════════════════════════════ -->
         <Border Grid.Column="2"
                 BackgroundColor="{StaticResource Surface}"
@@ -394,6 +554,23 @@
                                        FontSize="13"
                                        TextColor="{StaticResource TextPrimary}"
                                        BackgroundColor="Transparent" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Customer Name (read-only) -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Customer"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Label Text="{Binding CustomerName}"
+                                       FontSize="13"
+                                       TextColor="{StaticResource TextPrimary}" />
                             </Border>
                         </VerticalStackLayout>
 

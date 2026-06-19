@@ -8,7 +8,7 @@ using IMS.Services;
 namespace IMS.ViewModels;
 
 /// <summary>
-/// Represents a draggable item in the asset/labor list panel.
+/// Represents a draggable item in the left panel lists.
 /// </summary>
 public partial class DraggableSchedulingItem : ObservableObject
 {
@@ -19,7 +19,7 @@ public partial class DraggableSchedulingItem : ObservableObject
     private string _subtitle = string.Empty;
 
     [ObservableProperty]
-    private string _itemType = "Category"; // "Category", "Asset", "Labor"
+    private string _itemType = "Customer"; // "Customer", "Project", "Category", "Asset", "Labor"
 
     [ObservableProperty]
     private string _status = string.Empty;
@@ -28,7 +28,23 @@ public partial class DraggableSchedulingItem : ObservableObject
     private Color _statusColor = Colors.Transparent;
 
     [ObservableProperty]
-    private Guid _categoryId;
+    private bool _isExpanded;
+
+    [ObservableProperty]
+    private bool _isExpandable;
+
+    [ObservableProperty]
+    private List<DraggableSchedulingItem> _children = new();
+
+    // References
+    [ObservableProperty]
+    private Guid? _customerId;
+
+    [ObservableProperty]
+    private Guid? _projectId;
+
+    [ObservableProperty]
+    private Guid? _categoryId;
 
     [ObservableProperty]
     private Guid? _assetId;
@@ -46,7 +62,7 @@ public partial class DraggableSchedulingItem : ObservableObject
     [ObservableProperty]
     private decimal? _hourlyRate;
 
-    public string DragData => $"{ItemType}:{CategoryId}:{AssetId}:{Sku}:{TechnicianId}:{HourlyRate}";
+    public string DragData => $"{ItemType}:{CustomerId}:{ProjectId}:{CategoryId}:{AssetId}:{Sku}:{TechnicianId}:{HourlyRate}";
 }
 
 /// <summary>
@@ -65,6 +81,9 @@ public partial class EditableEventDetail : ObservableObject
 
     [ObservableProperty]
     private string _projectName = string.Empty;
+
+    [ObservableProperty]
+    private string _customerName = string.Empty;
 
     [ObservableProperty]
     private DateTime _startDate;
@@ -108,14 +127,11 @@ public partial class SchedulingViewModel : ObservableObject
         _dataStore = dataStore;
         _fakeData = fakeData;
         _authService = authService;
-        try
-        {
-            Refresh();
-        }
-        catch
-        {
-            // Silently handle initialization errors
-        }
+    }
+
+    public void Initialize()
+    {
+        Refresh();
     }
 
     // ─── Core Data ───
@@ -153,6 +169,9 @@ public partial class SchedulingViewModel : ObservableObject
     private List<CalendarEvent> _calendarEvents = new();
 
     [ObservableProperty]
+    private List<CalendarTreeNode> _calendarTreeNodes = new();
+
+    [ObservableProperty]
     private CalendarEvent? _selectedEvent;
 
     [ObservableProperty]
@@ -167,18 +186,37 @@ public partial class SchedulingViewModel : ObservableObject
     [ObservableProperty]
     private string _dateRangeText = string.Empty;
 
-    // ─── Asset/Labor List for Drag & Drop ───
+    // ─── View Mode ───
     [ObservableProperty]
-    private List<DraggableSchedulingItem> _schedulingItems = new();
+    private CalendarViewMode _calendarViewMode = CalendarViewMode.GroupByCustomer;
 
     [ObservableProperty]
-    private List<DraggableSchedulingItem> _filteredSchedulingItems = new();
+    private string _viewModeLabel = "Customer View";
+
+    partial void OnCalendarViewModeChanged(CalendarViewMode value)
+    {
+        ViewModeLabel = value == CalendarViewMode.GroupByCustomer ? "Customer View" : "Resource View";
+        BuildCalendarTree();
+    }
+
+    // ─── Left Panel Data ───
+    [ObservableProperty]
+    private List<DraggableSchedulingItem> _customerProjectItems = new();
 
     [ObservableProperty]
-    private string _schedulingTab = "Categories"; // "Categories", "Assets", "Labor"
+    private List<DraggableSchedulingItem> _filteredCustomerProjectItems = new();
 
     [ObservableProperty]
-    private bool _isDragging;
+    private List<DraggableSchedulingItem> _resourceItems = new();
+
+    [ObservableProperty]
+    private List<DraggableSchedulingItem> _filteredResourceItems = new();
+
+    [ObservableProperty]
+    private string _customerSearchText = string.Empty;
+
+    [ObservableProperty]
+    private string _resourceSearchText = string.Empty;
 
     // ─── Detail Panel ───
     [ObservableProperty]
@@ -202,57 +240,121 @@ public partial class SchedulingViewModel : ObservableObject
         Allocations = _dataStore.GetAll<ScheduleAllocation>()
             .OrderBy(a => a.StartDate)
             .ToList();
-        FilteredAllocations = Allocations;
-        LoadSchedulingItems();
+
+        if (SelectedProject != null)
+        {
+            FilteredAllocations = Allocations.Where(a => a.ProjectId == SelectedProject.ProjectId).ToList();
+        }
+        else
+        {
+            FilteredAllocations = Allocations;
+        }
+
+        LoadLeftPanelData();
+        BuildCalendarTree();
         UpdateCalendarEvents();
         UpdateStats();
     }
 
-    // ─── Scheduling Items Loading ───
+    // ─── Left Panel Data Loading ───
 
-    private void LoadSchedulingItems()
+    private void LoadLeftPanelData()
+    {
+        LoadCustomerProjectItems();
+        LoadResourceItems();
+    }
+
+    private void LoadCustomerProjectItems()
     {
         var items = new List<DraggableSchedulingItem>();
 
-        // Load categories
+        foreach (var customer in Customers)
+        {
+            var customerProjects = Projects.Where(p => p.CustomerId == customer.CustomerId).ToList();
+
+            var customerItem = new DraggableSchedulingItem
+            {
+                DisplayName = customer.AccountName,
+                Subtitle = $"{customerProjects.Count} project(s)",
+                ItemType = "Customer",
+                CustomerId = customer.CustomerId,
+                StatusColor = Color.FromArgb("#5B4DFF"),
+                IsExpandable = customerProjects.Count > 0,
+                IsExpanded = false,
+                Children = new List<DraggableSchedulingItem>()
+            };
+
+            foreach (var project in customerProjects)
+            {
+                customerItem.Children.Add(new DraggableSchedulingItem
+                {
+                    DisplayName = project.ProjectName,
+                    Subtitle = $"{project.StartDate:MMM dd} - {project.EndDate:MMM dd}",
+                    ItemType = "Project",
+                    CustomerId = customer.CustomerId,
+                    ProjectId = project.ProjectId,
+                    StatusColor = Color.FromArgb("#0EA5E9"),
+                    IsExpandable = false
+                });
+            }
+
+            items.Add(customerItem);
+        }
+
+        CustomerProjectItems = items;
+        FilteredCustomerProjectItems = items;
+    }
+
+    private void LoadResourceItems()
+    {
+        var items = new List<DraggableSchedulingItem>();
+
+        // Load categories with their assets
         var categories = _dataStore.GetAll<AssetCategory>()
             .Where(c => c.ParentCategoryId == null)
             .OrderBy(c => c.Name)
             .ToList();
 
+        var allAssets = _dataStore.GetAll<SerializedAsset>()
+            .Where(a => a.CurrentStatus == AssetStatus.Available)
+            .OrderBy(a => a.SerialNumber)
+            .ToList();
+
         foreach (var cat in categories)
         {
-            items.Add(new DraggableSchedulingItem
+            var catAssets = allAssets.Where(a => a.Sku == cat.Name || true).ToList(); // Simplified - in real app, use proper FK
+
+            var catItem = new DraggableSchedulingItem
             {
                 DisplayName = cat.Name,
                 Subtitle = "Category",
                 ItemType = "Category",
                 CategoryId = cat.CategoryId,
-                StatusColor = Color.FromArgb("#5B4DFF")
-            });
-        }
+                StatusColor = Color.FromArgb("#5B4DFF"),
+                IsExpandable = catAssets.Count > 0,
+                IsExpanded = false,
+                Children = new List<DraggableSchedulingItem>()
+            };
 
-        // Load serialized assets that are Available
-        var assets = _dataStore.GetAll<SerializedAsset>()
-            .Where(a => a.CurrentStatus == AssetStatus.Available)
-            .OrderBy(a => a.SerialNumber)
-            .ToList();
-
-        foreach (var asset in assets)
-        {
-            items.Add(new DraggableSchedulingItem
+            foreach (var asset in catAssets)
             {
-                DisplayName = asset.SerialNumber,
-                Subtitle = asset.Sku,
-                ItemType = "Asset",
-                AssetId = asset.AssetId,
-                Sku = asset.Sku,
-                Status = "Available",
-                StatusColor = Color.FromArgb("#22C55E")
-            });
+                catItem.Children.Add(new DraggableSchedulingItem
+                {
+                    DisplayName = asset.SerialNumber,
+                    Subtitle = asset.Sku,
+                    ItemType = "Asset",
+                    AssetId = asset.AssetId,
+                    Sku = asset.Sku,
+                    Status = "Available",
+                    StatusColor = Color.FromArgb("#22C55E"),
+                    IsExpandable = false
+                });
+            }
+
+            items.Add(catItem);
         }
 
-        // Load technicians for labor scheduling
+        // Add labor items
         foreach (var tech in Technicians)
         {
             items.Add(new DraggableSchedulingItem
@@ -262,107 +364,446 @@ public partial class SchedulingViewModel : ObservableObject
                 ItemType = "Labor",
                 TechnicianId = tech.UserId,
                 HourlyRate = tech.InternalHourlyRate,
-                StatusColor = Color.FromArgb("#F59E0B")
+                StatusColor = Color.FromArgb("#F59E0B"),
+                IsExpandable = false
             });
         }
 
-        SchedulingItems = items;
-        FilteredSchedulingItems = items;
+        ResourceItems = items;
+        FilteredResourceItems = items;
     }
 
     [RelayCommand]
-    private void FilterSchedulingItems()
+    private void FilterCustomerProjects()
     {
-        if (string.IsNullOrWhiteSpace(AssetSearchText))
+        if (string.IsNullOrWhiteSpace(CustomerSearchText))
         {
-            FilteredSchedulingItems = SchedulingItems;
+            FilteredCustomerProjectItems = CustomerProjectItems;
             return;
         }
 
-        var query = AssetSearchText.ToLower();
-        FilteredSchedulingItems = SchedulingItems
-            .Where(a => a.DisplayName.ToLower().Contains(query) ||
-                        a.Subtitle.ToLower().Contains(query))
+        var query = CustomerSearchText.ToLower();
+        FilteredCustomerProjectItems = CustomerProjectItems
+            .Where(c => c.DisplayName.ToLower().Contains(query) ||
+                        c.Children.Any(p => p.DisplayName.ToLower().Contains(query)))
             .ToList();
+
+        // Also filter children
+        foreach (var item in FilteredCustomerProjectItems)
+        {
+            item.Children = item.Children
+                .Where(p => p.DisplayName.ToLower().Contains(query))
+                .ToList();
+        }
     }
 
     [RelayCommand]
-    private void SwitchSchedulingTab(string tab)
+    private void FilterResources()
     {
-        SchedulingTab = tab;
-        switch (tab)
+        if (string.IsNullOrWhiteSpace(ResourceSearchText))
         {
-            case "Categories":
-                FilteredSchedulingItems = SchedulingItems.Where(a => a.ItemType == "Category").ToList();
-                break;
-            case "Assets":
-                FilteredSchedulingItems = SchedulingItems.Where(a => a.ItemType == "Asset").ToList();
-                break;
-            case "Labor":
-                FilteredSchedulingItems = SchedulingItems.Where(a => a.ItemType == "Labor").ToList();
-                break;
-            default:
-                FilteredSchedulingItems = SchedulingItems;
-                break;
+            FilteredResourceItems = ResourceItems;
+            return;
         }
+
+        var query = ResourceSearchText.ToLower();
+        FilteredResourceItems = ResourceItems
+            .Where(r => r.DisplayName.ToLower().Contains(query) ||
+                        r.Subtitle.ToLower().Contains(query) ||
+                        r.Children.Any(c => c.DisplayName.ToLower().Contains(query)))
+            .ToList();
+
+        foreach (var item in FilteredResourceItems)
+        {
+            item.Children = item.Children
+                .Where(c => c.DisplayName.ToLower().Contains(query))
+                .ToList();
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleCustomerProjectExpand(DraggableSchedulingItem item)
+    {
+        item.IsExpanded = !item.IsExpanded;
+        // Force UI refresh
+        var list = FilteredCustomerProjectItems;
+        FilteredCustomerProjectItems = new List<DraggableSchedulingItem>(list);
+    }
+
+    [RelayCommand]
+    private void ToggleResourceExpand(DraggableSchedulingItem item)
+    {
+        item.IsExpanded = !item.IsExpanded;
+        var list = FilteredResourceItems;
+        FilteredResourceItems = new List<DraggableSchedulingItem>(list);
+    }
+
+    // ─── Calendar Tree Building ───
+
+    private void BuildCalendarTree()
+    {
+        var projectDict = Projects.ToDictionary(p => p.ProjectId, p => p);
+        var customerDict = Customers.ToDictionary(c => c.CustomerId, c => c);
+        var categories = _dataStore.GetAll<AssetCategory>().ToDictionary(c => c.CategoryId, c => c.Name);
+        var assets = _dataStore.GetAll<SerializedAsset>().ToDictionary(a => a.AssetId, a => a.SerialNumber);
+        var techDict = Technicians.ToDictionary(t => t.UserId, t => t.DisplayName);
+
+        var nodes = new List<CalendarTreeNode>();
+
+        if (CalendarViewMode == CalendarViewMode.GroupByCustomer)
+        {
+            // Group allocations by Customer → Project → Resource
+            var customerGroups = FilteredAllocations
+                .GroupBy(a =>
+                {
+                    projectDict.TryGetValue(a.ProjectId, out var proj);
+                    return proj?.CustomerId ?? Guid.Empty;
+                })
+                .OrderBy(g =>
+                {
+                    customerDict.TryGetValue(g.Key, out var cust);
+                    return cust?.AccountName ?? "Unknown";
+                });
+
+            foreach (var custGroup in customerGroups)
+            {
+                if (custGroup.Key == Guid.Empty) continue;
+                customerDict.TryGetValue(custGroup.Key, out var customer);
+
+                var custNode = new CalendarTreeNode
+                {
+                    Id = $"cust-{custGroup.Key}",
+                    Label = customer?.AccountName ?? "Unknown Customer",
+                    Icon = "🏢",
+                    Depth = 0,
+                    IsExpandable = true,
+                    IsExpanded = true,
+                    NodeType = CalendarEventType.Project,
+                    CustomerId = custGroup.Key
+                };
+
+                var projectGroups = custGroup.GroupBy(a => a.ProjectId);
+                foreach (var projGroup in projectGroups)
+                {
+                    projectDict.TryGetValue(projGroup.Key, out var project);
+
+                    var projNode = new CalendarTreeNode
+                    {
+                        Id = $"proj-{projGroup.Key}",
+                        Label = project?.ProjectName ?? "Unknown Project",
+                        Icon = "📋",
+                        Depth = 1,
+                        IsExpandable = true,
+                        IsExpanded = true,
+                        NodeType = CalendarEventType.Project,
+                        CustomerId = custGroup.Key,
+                        ProjectId = projGroup.Key
+                    };
+
+                    foreach (var alloc in projGroup)
+                    {
+                        var categoryName = alloc.CategoryId.HasValue ? categories.GetValueOrDefault(alloc.CategoryId.Value) : null;
+                        var assetSerial = alloc.SerializedAssetId.HasValue ? assets.GetValueOrDefault(alloc.SerializedAssetId.Value) : null;
+
+                        var title = assetSerial ?? categoryName ?? "Allocation";
+                        var eventType = CalendarEventType.Category;
+                        if (assetSerial != null)
+                            eventType = CalendarEventType.Asset;
+                        if (alloc.CategoryId == null && alloc.SerializedAssetId == null)
+                            eventType = CalendarEventType.Labor;
+
+                        var calendarEvent = new CalendarEvent
+                        {
+                            EventId = Guid.NewGuid(),
+                            EventType = eventType,
+                            AllocationId = alloc.AllocationId,
+                            ProjectId = alloc.ProjectId,
+                            ProjectName = project?.ProjectName ?? "Unknown",
+                            Title = title,
+                            StartDate = alloc.StartDate,
+                            EndDate = alloc.EndDate,
+                            Tier = alloc.AllocationTier,
+                            CategoryName = categoryName,
+                            AssetSerial = assetSerial,
+                            BulkQuantity = alloc.BulkQuantity,
+                            Notes = alloc.Notes,
+                            Details = alloc.Details
+                        };
+
+                        var resNode = new CalendarTreeNode
+                        {
+                            Id = $"res-{alloc.AllocationId}",
+                            Label = title,
+                            Icon = eventType switch
+                            {
+                                CalendarEventType.Asset => "🔧",
+                                CalendarEventType.Category => "📦",
+                                CalendarEventType.Labor => "👤",
+                                _ => "📌"
+                            },
+                            Depth = 2,
+                            IsExpandable = false,
+                            NodeType = eventType,
+                            CustomerId = custGroup.Key,
+                            ProjectId = projGroup.Key,
+                            CalendarEvent = calendarEvent
+                        };
+
+                        projNode.Children.Add(resNode);
+                    }
+
+                    if (projNode.Children.Count > 0)
+                        custNode.Children.Add(projNode);
+                }
+
+                if (custNode.Children.Count > 0)
+                    nodes.Add(custNode);
+            }
+        }
+        else // GroupByResource
+        {
+            // Group allocations by Category → Asset → Customer/Project
+            var categoryGroups = FilteredAllocations
+                .Where(a => a.CategoryId.HasValue)
+                .GroupBy(a => a.CategoryId!.Value);
+
+            foreach (var catGroup in categoryGroups)
+            {
+                var catName = categories.GetValueOrDefault(catGroup.Key, "Unknown Category");
+
+                var catNode = new CalendarTreeNode
+                {
+                    Id = $"cat-{catGroup.Key}",
+                    Label = catName,
+                    Icon = "📦",
+                    Depth = 0,
+                    IsExpandable = true,
+                    IsExpanded = true,
+                    NodeType = CalendarEventType.Category,
+                    CategoryId = catGroup.Key
+                };
+
+                var assetGroups = catGroup.GroupBy(a => a.SerializedAssetId);
+                foreach (var assetGroup in assetGroups)
+                {
+                    var assetSerial = assetGroup.Key.HasValue ? assets.GetValueOrDefault(assetGroup.Key.Value) : "Bulk";
+
+                    var assetNode = new CalendarTreeNode
+                    {
+                        Id = $"asset-{assetGroup.Key?.ToString() ?? "bulk"}",
+                        Label = assetSerial ?? "Bulk Quantity",
+                        Icon = "🔧",
+                        Depth = 1,
+                        IsExpandable = true,
+                        IsExpanded = true,
+                        NodeType = CalendarEventType.Asset,
+                        CategoryId = catGroup.Key,
+                        AssetId = assetGroup.Key
+                    };
+
+                    foreach (var alloc in assetGroup)
+                    {
+                        projectDict.TryGetValue(alloc.ProjectId, out var project);
+                        customerDict.TryGetValue(project?.CustomerId ?? Guid.Empty, out var customer);
+
+                        var label = customer != null
+                            ? $"{customer.AccountName}: {project?.ProjectName ?? "Unknown"}"
+                            : project?.ProjectName ?? "Unknown Project";
+
+                        var calendarEvent = new CalendarEvent
+                        {
+                            EventId = Guid.NewGuid(),
+                            EventType = CalendarEventType.Asset,
+                            AllocationId = alloc.AllocationId,
+                            ProjectId = alloc.ProjectId,
+                            ProjectName = project?.ProjectName ?? "Unknown",
+                            Title = label,
+                            StartDate = alloc.StartDate,
+                            EndDate = alloc.EndDate,
+                            Tier = alloc.AllocationTier,
+                            CategoryName = catName,
+                            AssetSerial = assetSerial,
+                            BulkQuantity = alloc.BulkQuantity,
+                            Notes = alloc.Notes,
+                            Details = alloc.Details
+                        };
+
+                        var custProjNode = new CalendarTreeNode
+                        {
+                            Id = $"cp-{alloc.AllocationId}",
+                            Label = label,
+                            Icon = "🏢",
+                            Depth = 2,
+                            IsExpandable = false,
+                            NodeType = CalendarEventType.Project,
+                            CustomerId = project?.CustomerId,
+                            ProjectId = alloc.ProjectId,
+                            CalendarEvent = calendarEvent
+                        };
+
+                        assetNode.Children.Add(custProjNode);
+                    }
+
+                    if (assetNode.Children.Count > 0)
+                        catNode.Children.Add(assetNode);
+                }
+
+                if (catNode.Children.Count > 0)
+                    nodes.Add(catNode);
+            }
+
+            // Add labor allocations
+            var laborAllocs = FilteredAllocations.Where(a => a.CategoryId == null && a.SerializedAssetId == null);
+            if (laborAllocs.Any())
+            {
+                var laborNode = new CalendarTreeNode
+                {
+                    Id = "labor-group",
+                    Label = "Labor",
+                    Icon = "👤",
+                    Depth = 0,
+                    IsExpandable = true,
+                    IsExpanded = true,
+                    NodeType = CalendarEventType.Labor
+                };
+
+                foreach (var alloc in laborAllocs)
+                {
+                    projectDict.TryGetValue(alloc.ProjectId, out var project);
+                    customerDict.TryGetValue(project?.CustomerId ?? Guid.Empty, out var customer);
+
+                    var label = customer != null
+                        ? $"{customer.AccountName}: {project?.ProjectName ?? "Unknown"}"
+                        : project?.ProjectName ?? "Unknown Project";
+
+                    var calendarEvent = new CalendarEvent
+                    {
+                        EventId = Guid.NewGuid(),
+                        EventType = CalendarEventType.Labor,
+                        AllocationId = alloc.AllocationId,
+                        ProjectId = alloc.ProjectId,
+                        ProjectName = project?.ProjectName ?? "Unknown",
+                        Title = label,
+                        StartDate = alloc.StartDate,
+                        EndDate = alloc.EndDate,
+                        Tier = alloc.AllocationTier,
+                        Notes = alloc.Notes,
+                        Details = alloc.Details
+                    };
+
+                    var custProjNode = new CalendarTreeNode
+                    {
+                        Id = $"cp-labor-{alloc.AllocationId}",
+                        Label = label,
+                        Icon = "🏢",
+                        Depth = 1,
+                        IsExpandable = false,
+                        NodeType = CalendarEventType.Project,
+                        CustomerId = project?.CustomerId,
+                        ProjectId = alloc.ProjectId,
+                        CalendarEvent = calendarEvent
+                    };
+
+                    laborNode.Children.Add(custProjNode);
+                }
+
+                if (laborNode.Children.Count > 0)
+                    nodes.Add(laborNode);
+            }
+        }
+
+        CalendarTreeNodes = nodes;
     }
 
     // ─── Drag & Drop Handling ───
 
-    /// <summary>
-    /// Called when an item is dropped onto a specific date on the calendar.
-    /// Creates the appropriate allocation based on item type.
-    /// </summary>
     public void HandleDrop(string dragData, DateTime dropDate)
     {
-        if (SelectedProject == null) return;
-
         var parts = dragData.Split(':');
         if (parts.Length < 2) return;
 
         var itemType = parts[0];
-        var categoryIdStr = parts[1];
-        var assetIdStr = parts.Length > 2 ? parts[2] : null;
-        var sku = parts.Length > 3 ? parts[3] : null;
-        var techIdStr = parts.Length > 4 ? parts[4] : null;
-        var hourlyRateStr = parts.Length > 5 ? parts[5] : null;
-
-        if (!Guid.TryParse(categoryIdStr, out var categoryId)) return;
-
-        Guid? assetId = null;
-        if (!string.IsNullOrEmpty(assetIdStr) && Guid.TryParse(assetIdStr, out var parsedAssetId))
-            assetId = parsedAssetId;
-
-        Guid? techId = null;
-        if (!string.IsNullOrEmpty(techIdStr) && Guid.TryParse(techIdStr, out var parsedTechId))
-            techId = parsedTechId;
-
-        decimal? hourlyRate = null;
-        if (!string.IsNullOrEmpty(hourlyRateStr) && decimal.TryParse(hourlyRateStr, out var parsedRate))
-            hourlyRate = parsedRate;
 
         switch (itemType)
         {
+            case "Customer":
+                HandleCustomerDrop(parts, dropDate);
+                break;
+            case "Project":
+                HandleProjectDrop(parts, dropDate);
+                break;
             case "Category":
-                CreateCategoryAllocation(categoryId, dropDate, SelectedProject.ProjectId);
+                HandleCategoryDrop(parts, dropDate);
                 break;
             case "Asset":
-                CreateAssetAllocation(assetId, dropDate, SelectedProject.ProjectId);
+                HandleAssetDrop(parts, dropDate);
                 break;
             case "Labor":
-                CreateLaborAllocation(techId, hourlyRate, dropDate, SelectedProject.ProjectId);
+                HandleLaborDrop(parts, dropDate);
                 break;
         }
 
         Refresh();
     }
 
-    private void CreateCategoryAllocation(Guid categoryId, DateTime dropDate, Guid projectId)
+    private void HandleCustomerDrop(string[] parts, DateTime dropDate)
     {
+        if (parts.Length < 2) return;
+        if (!Guid.TryParse(parts[1], out var customerId)) return;
+
+        // Create a placeholder allocation for the customer
+        // This creates a project-level allocation that can be refined later
+        var customer = Customers.FirstOrDefault(c => c.CustomerId == customerId);
+        if (customer == null) return;
+
+        // Find or create a project for this customer
+        var existingProject = Projects.FirstOrDefault(p => p.CustomerId == customerId);
+        if (existingProject != null)
+        {
+            // Use the first project found
+            var allocation = new ScheduleAllocation
+            {
+                AllocationId = Guid.NewGuid(),
+                ProjectId = existingProject.ProjectId,
+                AllocationTier = AllocationTier.Soft_Hold,
+                StartDate = dropDate,
+                EndDate = dropDate.AddDays(14),
+                BulkQuantity = 0
+            };
+            _fakeData.ScheduleAllocations.Add(allocation);
+        }
+    }
+
+    private void HandleProjectDrop(string[] parts, DateTime dropDate)
+    {
+        if (parts.Length < 3) return;
+        if (!Guid.TryParse(parts[2], out var projectId)) return;
+
+        var project = Projects.FirstOrDefault(p => p.ProjectId == projectId);
+        if (project == null) return;
+
         var allocation = new ScheduleAllocation
         {
             AllocationId = Guid.NewGuid(),
             ProjectId = projectId,
+            AllocationTier = AllocationTier.Soft_Hold,
+            StartDate = dropDate,
+            EndDate = dropDate.AddDays(14),
+            BulkQuantity = 0
+        };
+        _fakeData.ScheduleAllocations.Add(allocation);
+    }
+
+    private void HandleCategoryDrop(string[] parts, DateTime dropDate)
+    {
+        if (SelectedProject == null) return;
+        if (parts.Length < 2) return;
+        if (!Guid.TryParse(parts[1], out var categoryId)) return;
+
+        var allocation = new ScheduleAllocation
+        {
+            AllocationId = Guid.NewGuid(),
+            ProjectId = SelectedProject.ProjectId,
             AllocationTier = AllocationTier.Soft_Hold,
             StartDate = dropDate,
             EndDate = dropDate.AddDays(14),
@@ -372,13 +813,16 @@ public partial class SchedulingViewModel : ObservableObject
         _fakeData.ScheduleAllocations.Add(allocation);
     }
 
-    private void CreateAssetAllocation(Guid? assetId, DateTime dropDate, Guid projectId)
+    private void HandleAssetDrop(string[] parts, DateTime dropDate)
     {
-        if (assetId == null) return;
+        if (SelectedProject == null) return;
+        if (parts.Length < 5) return;
+        if (!Guid.TryParse(parts[4], out var assetId)) return;
+
         var allocation = new ScheduleAllocation
         {
             AllocationId = Guid.NewGuid(),
-            ProjectId = projectId,
+            ProjectId = SelectedProject.ProjectId,
             AllocationTier = AllocationTier.Soft_Hold,
             StartDate = dropDate,
             EndDate = dropDate.AddDays(14),
@@ -388,20 +832,37 @@ public partial class SchedulingViewModel : ObservableObject
         _fakeData.ScheduleAllocations.Add(allocation);
     }
 
-    private void CreateLaborAllocation(Guid? techId, decimal? hourlyRate, DateTime dropDate, Guid projectId)
+    private void HandleLaborDrop(string[] parts, DateTime dropDate)
     {
-        if (techId == null) return;
+        if (SelectedProject == null) return;
+        if (parts.Length < 7) return;
+        if (!Guid.TryParse(parts[6], out var techId)) return;
+
+        decimal? hourlyRate = null;
+        if (parts.Length > 7 && decimal.TryParse(parts[7], out var parsedRate))
+            hourlyRate = parsedRate;
+
         var allocation = new ScheduleAllocation
         {
             AllocationId = Guid.NewGuid(),
-            ProjectId = projectId,
+            ProjectId = SelectedProject.ProjectId,
             AllocationTier = AllocationTier.Soft_Hold,
             StartDate = dropDate,
-            EndDate = dropDate.AddDays(1), // Default 1 day for labor
+            EndDate = dropDate.AddDays(1),
             SerializedAssetId = null,
             BulkQuantity = 0
         };
         _fakeData.ScheduleAllocations.Add(allocation);
+    }
+
+    // ─── View Mode Toggle ───
+
+    [RelayCommand]
+    private void ToggleViewMode()
+    {
+        CalendarViewMode = CalendarViewMode == CalendarViewMode.GroupByCustomer
+            ? CalendarViewMode.GroupByResource
+            : CalendarViewMode.GroupByCustomer;
     }
 
     // ─── Event Selection & Detail Editing ───
@@ -412,13 +873,16 @@ public partial class SchedulingViewModel : ObservableObject
         SelectedEvent = calendarEvent;
         IsEventSelected = true;
 
-        // Populate detail panel
+        var project = Projects.FirstOrDefault(p => p.ProjectId == calendarEvent.ProjectId);
+        var customer = project != null ? Customers.FirstOrDefault(c => c.CustomerId == project.CustomerId) : null;
+
         EditingDetail = new EditableEventDetail
         {
             EventId = calendarEvent.EventId,
             Title = calendarEvent.Title,
             EventType = calendarEvent.EventType.ToString(),
             ProjectName = calendarEvent.ProjectName,
+            CustomerName = customer?.AccountName ?? string.Empty,
             StartDate = calendarEvent.StartDate,
             EndDate = calendarEvent.EndDate,
             Tier = calendarEvent.Tier.ToString(),
@@ -448,7 +912,6 @@ public partial class SchedulingViewModel : ObservableObject
     {
         if (EditingDetail == null || SelectedEvent == null) return;
 
-        // Update the calendar event
         SelectedEvent.Title = EditingDetail.Title;
         SelectedEvent.StartDate = EditingDetail.StartDate;
         SelectedEvent.EndDate = EditingDetail.EndDate;
@@ -457,7 +920,6 @@ public partial class SchedulingViewModel : ObservableObject
         SelectedEvent.EstimatedHours = EditingDetail.EstimatedHours;
         SelectedEvent.HourlyRate = EditingDetail.HourlyRate;
 
-        // Update the underlying allocation
         var allocation = _fakeData.ScheduleAllocations
             .FirstOrDefault(a => a.AllocationId == SelectedEvent.AllocationId);
         if (allocation != null)
@@ -466,7 +928,6 @@ public partial class SchedulingViewModel : ObservableObject
             allocation.EndDate = EditingDetail.EndDate;
         }
 
-        // Refresh display
         UpdateCalendarEvents();
         IsDetailPanelVisible = false;
     }
@@ -595,26 +1056,11 @@ public partial class SchedulingViewModel : ObservableObject
 
         var events = new List<CalendarEvent>();
 
-        // Group allocations by project
         var projectGroups = FilteredAllocations.GroupBy(a => a.ProjectId);
 
         foreach (var group in projectGroups)
         {
             var projectName = projectDict.GetValueOrDefault(group.Key, "Unknown Project") ?? "Unknown Project";
-
-            // Create a project-level event (header row)
-            var projectEvent = new CalendarEvent
-            {
-                EventId = Guid.NewGuid(),
-                EventType = CalendarEventType.Project,
-                ProjectId = group.Key,
-                ProjectName = projectName,
-                Title = projectName,
-                StartDate = group.Min(a => a.StartDate),
-                EndDate = group.Max(a => a.EndDate),
-                IsExpanded = true
-            };
-            events.Add(projectEvent);
 
             foreach (var alloc in group)
             {
@@ -625,8 +1071,6 @@ public partial class SchedulingViewModel : ObservableObject
                 var eventType = CalendarEventType.Category;
                 if (assetSerial != null)
                     eventType = CalendarEventType.Asset;
-
-                // Check if this might be a labor allocation (no category or asset)
                 if (alloc.CategoryId == null && alloc.SerializedAssetId == null)
                     eventType = CalendarEventType.Labor;
 
@@ -634,7 +1078,6 @@ public partial class SchedulingViewModel : ObservableObject
                 {
                     EventId = Guid.NewGuid(),
                     EventType = eventType,
-                    ParentEventId = projectEvent.EventId,
                     AllocationId = alloc.AllocationId,
                     ProjectId = alloc.ProjectId,
                     ProjectName = projectName,

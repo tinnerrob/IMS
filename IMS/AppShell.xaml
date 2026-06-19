@@ -5,8 +5,8 @@
        x:Class="IMS.AppShell"
        Shell.FlyoutBehavior="Disabled"
        Shell.NavBarIsVisible="False"
-       Shell.BackgroundColor="{StaticResource MD3_Surface}"
-       Shell.ForegroundColor="{StaticResource MD3_OnSurface}">
+       Shell.BackgroundColor="{StaticResource Surface}"
+       Shell.ForegroundColor="{StaticResource OnSurface}">
 
     <!-- Login (no sidebar, full screen) -->
     <ShellContent x:Name="LoginRoute"
