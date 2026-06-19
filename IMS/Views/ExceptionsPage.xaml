@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.ExceptionsPage"
+             x:DataType="vm:ExceptionsViewModel"
+             Title="Exceptions">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="24">
+
+            <!-- ─── Header ─── -->
+            <HorizontalStackLayout Spacing="16">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Exceptions" Style="{StaticResource HeadlineMedium}" />
+                    <Label Text="Monitor issues, low stock, and assets needing attention"
+                           Style="{StaticResource BodyMedium}" TextColor="{StaticResource OnSurfaceVariant}" />
+                </VerticalStackLayout>
+                <Frame Padding="14,6" CornerRadius="20"
+                       BackgroundColor="{StaticResource ErrorContainer}"
+                       HasShadow="False" BorderColor="Transparent"
+                       VerticalOptions="Center">
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="!" FontSize="14" FontAttributes="Bold"
+                               TextColor="{StaticResource OnErrorContainer}"
+                               VerticalOptions="Center" />
+                        <Label Text="{Binding TotalExceptions, StringFormat='{0} Issues'}"
+                               Style="{StaticResource LabelLarge}"
+                               TextColor="{StaticResource OnErrorContainer}" />
+                    </HorizontalStackLayout>
+                </Frame>
+            </HorizontalStackLayout>
+
+            <!-- ─── Low Stock ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="⚠" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="{Binding LowStockPools.Count, StringFormat='Low Stock Alerts ({0})'}"
+                               Style="{StaticResource TitleMedium}" TextColor="{StaticResource Warning}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding LowStockPools}" HeightRequest="160">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:BulkQuantityPool">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="14,10">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
+                                        <Label Grid.Column="0" Text="{Binding Sku}" Style="{StaticResource BodyMedium}" />
+                                        <Label Grid.Column="1" Text="{Binding TotalQuantityOwned, StringFormat='Owned: {0}'}"
+                                               Style="{StaticResource BodySmall}" TextColor="{StaticResource OnSurfaceVariant}" />
+                                        <Frame Grid.Column="2" Padding="8,3" CornerRadius="12"
+                                               BackgroundColor="{StaticResource WarningContainer}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding MinSafetyStock, StringFormat='Min: {0}'}"
+                                                   Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnWarningContainer}" />
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="No low stock items" Style="{StaticResource BodySmall}"
+                                   TextColor="{StaticResource OnSurfaceVariant}" Margin="0,10" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ─── Damaged / In Repair Assets ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="🔧" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="{Binding DamagedAssets.Count, StringFormat='Assets Needing Attention ({0})'}"
+                               Style="{StaticResource TitleMedium}" TextColor="{StaticResource StatusInRepair}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding DamagedAssets}" HeightRequest="220">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:SerializedAsset">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="14,10">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <Label Grid.Column="0" Text="{Binding SerialNumber}"
+                                               Style="{StaticResource BodyMedium}" />
+                                        <Frame Grid.Column="1" Padding="10,4" CornerRadius="20"
+                                               BackgroundColor="{StaticResource StatusInRepair}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding CurrentStatus}" TextColor="White"
+                                                   Style="{StaticResource LabelSmall}" />
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="No damaged or in-repair assets" Style="{StaticResource BodySmall}"
+                                   TextColor="{StaticResource OnSurfaceVariant}" Margin="0,10" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ─── Open SMR Tickets ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="📋" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="{Binding OpenTickets.Count, StringFormat='Open SMR Tickets ({0})'}"
+                               Style="{StaticResource TitleMedium}" TextColor="{StaticResource Error}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding OpenTickets}" HeightRequest="220">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:SmrServiceTicket">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="14,10">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                            <Label Text="{Binding Description}" Style="{StaticResource BodySmall}"
+                                                   LineBreakMode="TailTruncation" MaxLines="1" />
+                                            <Label Text="{Binding CreatedAt, StringFormat='Created: {0:MMM dd, yyyy}'}"
+                                                   Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnSurfaceVariant}" />
+                                        </VerticalStackLayout>
+                                        <Frame Grid.Column="1" Padding="8,4" CornerRadius="6"
+                                               BackgroundColor="{StaticResource PrimaryContainer}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding TicketType}" Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnPrimaryContainer}" />
+                                        </Frame>
+                                        <Frame Grid.Column="2" Padding="8,4" CornerRadius="6"
+                                               BackgroundColor="{StaticResource ErrorContainer}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding TicketStatus}" Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnErrorContainer}" />
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="No open tickets" Style="{StaticResource BodySmall}"
+                                   TextColor="{StaticResource OnSurfaceVariant}" Margin="0,10" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

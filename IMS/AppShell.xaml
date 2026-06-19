@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:IMS.Views"
+       x:Class="IMS.AppShell"
+       Shell.FlyoutBehavior="Disabled"
+       Shell.NavBarIsVisible="False"
+       Shell.BackgroundColor="{StaticResource MD3_Surface}"
+       Shell.ForegroundColor="{StaticResource MD3_OnSurface}">
+
+    <!-- Login (no sidebar, full screen) -->
+    <ShellContent x:Name="LoginRoute"
+                  Route="Login"
+                  ContentTemplate="{DataTemplate views:LoginPage}"
+                  Shell.TabBarIsVisible="False"
+                  Shell.NavBarIsVisible="False" />
+
+    <!-- Main App with Persistent Sidebar -->
+    <ShellContent x:Name="MainRoute"
+                  Route="Main"
+                  ContentTemplate="{DataTemplate views:MainPage}"
+                  Shell.TabBarIsVisible="False"
+                  Shell.NavBarIsVisible="False" />
+
+</Shell>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:conv="clr-namespace:IMS.Converters"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.LeasesPage"
+             x:DataType="vm:LeasesViewModel"
+             Title="Leases">
+
+    <ContentPage.Resources>
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*" Padding="24" RowSpacing="20">
+
+        <!-- ─── Header & Summary ─── -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="16">
+            <VerticalStackLayout Grid.Column="0" Spacing="4">
+                <Label Text="Leases" Style="{StaticResource HeadlineMedium}" />
+                <Label Text="Track asset checkouts and returns"
+                       Style="{StaticResource BodyMedium}" TextColor="{StaticResource OnSurfaceVariant}" />
+            </VerticalStackLayout>
+            <Frame Grid.Column="1" Style="{StaticResource FilledCard}" Padding="16,10">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="●" TextColor="{StaticResource StatusInUse}" FontSize="14"
+                           VerticalOptions="Center" />
+                    <VerticalStackLayout Spacing="0">
+                        <Label Text="{Binding ActiveLeases.Count}" Style="{StaticResource HeadlineSmall}"
+                               TextColor="{StaticResource StatusInUse}" />
+                        <Label Text="Active" Style="{StaticResource LabelSmall}"
+                               TextColor="{StaticResource OnSurfaceVariant}" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </Frame>
+            <Frame Grid.Column="2" Style="{StaticResource FilledCard}" Padding="16,10">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="●" TextColor="{StaticResource StatusAvailable}" FontSize="14"
+                           VerticalOptions="Center" />
+                    <VerticalStackLayout Spacing="0">
+                        <Label Text="{Binding CompletedLeases.Count}" Style="{StaticResource HeadlineSmall}"
+                               TextColor="{StaticResource StatusAvailable}" />
+                        <Label Text="Completed" Style="{StaticResource LabelSmall}"
+                               TextColor="{StaticResource OnSurfaceVariant}" />
+                    </VerticalStackLayout>
+                </HorizontalStackLayout>
+            </Frame>
+        </Grid>
+
+        <!-- ─── Lease List ─── -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="All Lease Transactions" Style="{StaticResource TitleMedium}" />
+                <CollectionView ItemsSource="{Binding AllLeases}" SelectionMode="Single"
+                                SelectionChangedCommand="{Binding SelectLeaseCommand}"
+                                SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:LeaseTransactionLedger">
+                            <Frame Style="{StaticResource OutlinedCard}" Margin="0,3" Padding="16">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                                    <BoxView Grid.Column="0" WidthRequest="4" CornerRadius="2"
+                                             Color="{StaticResource Primary}" VerticalOptions="Fill" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding OutboundTimestamp, StringFormat='Dispatched: {0:MMM dd, yyyy HH:mm}'}"
+                                               Style="{StaticResource BodyMedium}" />
+                                        <HorizontalStackLayout Spacing="12">
+                                            <Label Style="{StaticResource LabelSmall}" TextColor="{StaticResource OnSurfaceVariant}">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="Asset: " />
+                                                        <Span Text="{Binding AssetId}" FontAttributes="Bold" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                            <Frame Padding="6,2" CornerRadius="4"
+                                                   BackgroundColor="{StaticResource SuccessContainer}"
+                                                   HasShadow="False" BorderColor="Transparent"
+                                                   IsVisible="{Binding ActualReturnTimestamp, Converter={StaticResource InverseBool}}">
+                                                <Label Text="{Binding ReturnCondition}" Style="{StaticResource LabelSmall}"
+                                                       TextColor="{StaticResource OnSuccessContainer}" />
+                                            </Frame>
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" Spacing="2">
+                                        <Label Text="{Binding OutboundTimestamp, StringFormat='{0:MMM dd}'}"
+                                               Style="{StaticResource LabelSmall}"
+                                               TextColor="{StaticResource OnSurfaceVariant}" />
+                                        <Label Text="{Binding ActualReturnTimestamp, StringFormat='→ {0:MMM dd}'}"
+                                               Style="{StaticResource LabelSmall}"
+                                               TextColor="{StaticResource OnSurfaceVariant}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

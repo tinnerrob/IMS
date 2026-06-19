@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:conv="clr-namespace:IMS.Converters"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.AdminPage"
+             x:DataType="vm:AdminViewModel"
+             Title="Admin">
+
+    <ContentPage.Resources>
+        <conv:FirstLetterConverter x:Key="FirstLetterConverter" />
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="24">
+
+            <!-- ─── Header ─── -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Administration" Style="{StaticResource HeadlineMedium}" />
+                <Label Text="Manage users, organizations, and view audit logs"
+                       Style="{StaticResource BodyMedium}" TextColor="{StaticResource OnSurfaceVariant}" />
+            </VerticalStackLayout>
+
+            <!-- ─── Users Section ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="👥" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="{Binding Users.Count, StringFormat='Users ({0})'}"
+                               Style="{StaticResource TitleMedium}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding Users}" HeightRequest="320" SelectionMode="Single"
+                                    SelectionChangedCommand="{Binding SelectUserCommand}"
+                                    SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:TenantUser">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="14,10">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Frame WidthRequest="36" HeightRequest="36" CornerRadius="18"
+                                               BackgroundColor="{StaticResource Primary}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding DisplayName, Converter={StaticResource FirstLetterConverter}}"
+                                                   FontSize="14" FontAttributes="Bold"
+                                                   TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Frame>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                            <Label Text="{Binding DisplayName}" Style="{StaticResource BodyMedium}" />
+                                            <Label Text="{Binding Email}" Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnSurfaceVariant}" />
+                                        </VerticalStackLayout>
+                                        <Frame Grid.Column="2" Padding="8,4" CornerRadius="6"
+                                               BackgroundColor="{StaticResource PrimaryContainer}"
+                                               HasShadow="False" BorderColor="Transparent"
+                                               VerticalOptions="Center">
+                                            <Label Text="{Binding UserType}" Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnPrimaryContainer}" />
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ─── Organizations ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="🏢" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="{Binding Organizations.Count, StringFormat='Organizations ({0})'}"
+                               Style="{StaticResource TitleMedium}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding Organizations}" HeightRequest="220">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Organization">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="14,10">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <Label Grid.Column="0" Text="{Binding OrgName}"
+                                               Style="{StaticResource BodyMedium}" />
+                                        <Frame Grid.Column="1" Padding="8,4" CornerRadius="6"
+                                               BackgroundColor="{StaticResource TertiaryContainer}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding SubTier}" Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnTertiaryContainer}" />
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ─── Audit Log ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="📝" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Audit Log (Last 50)" Style="{StaticResource TitleMedium}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding AuditLog}" HeightRequest="420">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:AuditLogEntry">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="12,8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Frame Grid.Column="0" Padding="8,4" CornerRadius="6"
+                                               BackgroundColor="{StaticResource PrimaryContainer}"
+                                               HasShadow="False" BorderColor="Transparent">
+                                            <Label Text="{Binding Action}" Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnPrimaryContainer}" />
+                                        </Frame>
+                                        <Label Grid.Column="1" Text="{Binding Details}"
+                                               Style="{StaticResource BodySmall}"
+                                               LineBreakMode="TailTruncation" MaxLines="1"
+                                               VerticalOptions="Center" />
+                                        <Label Grid.Column="2" Text="{Binding Timestamp, StringFormat='{0:MMM dd HH:mm}'}"
+                                               Style="{StaticResource LabelSmall}"
+                                               TextColor="{StaticResource OnSurfaceVariant}"
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,29 @@
+﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:IMS"
+             xmlns:converters="clr-namespace:IMS.Converters"
+             x:Class="IMS.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Global Converters -->
+            <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
+            <converters:StatusToTextConverter x:Key="StatusToTextConverter" />
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:CurrencyFormatConverter x:Key="CurrencyFormatConverter" />
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <converters:FirstLetterConverter x:Key="FirstLetterConverter" />
+            <converters:AllocationTierToColorConverter x:Key="AllocationTierToColorConverter" />
+            <converters:CreditStatusToColorConverter x:Key="CreditStatusToColorConverter" />
+            <converters:TabActiveConverter x:Key="TabActiveConverter" />
+            <converters:TabTextConverter x:Key="TabTextConverter" />
+            <converters:IsLaborConverter x:Key="IsLaborConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
+

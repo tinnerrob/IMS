@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         MODERN PREMIUM COLOR SYSTEM
+         A refined, professional palette with depth and sophistication.
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- ─── Primary: Deep Indigo / Violet ─── -->
+    <Color x:Key="Primary">#5B4DFF</Color>
+    <Color x:Key="PrimaryLight">#7B6FFF</Color>
+    <Color x:Key="PrimaryDark">#3D2FD9</Color>
+    <Color x:Key="OnPrimary">#FFFFFF</Color>
+    <Color x:Key="PrimaryContainer">#EEEAFF</Color>
+    <Color x:Key="OnPrimaryContainer">#1A0D8A</Color>
+
+    <!-- ─── Secondary: Slate / Steel ─── -->
+    <Color x:Key="Secondary">#5F6368</Color>
+    <Color x:Key="OnSecondary">#FFFFFF</Color>
+    <Color x:Key="SecondaryContainer">#E8EAED</Color>
+    <Color x:Key="OnSecondaryContainer">#1D1B20</Color>
+
+    <!-- ─── Tertiary: Teal / Cyan Accent ─── -->
+    <Color x:Key="Tertiary">#0891B2</Color>
+    <Color x:Key="OnTertiary">#FFFFFF</Color>
+    <Color x:Key="TertiaryContainer">#CFFAFE</Color>
+    <Color x:Key="OnTertiaryContainer">#083344</Color>
+
+    <!-- ─── Error / Destructive ─── -->
+    <Color x:Key="Error">#DC2626</Color>
+    <Color x:Key="OnError">#FFFFFF</Color>
+    <Color x:Key="ErrorContainer">#FEE2E2</Color>
+    <Color x:Key="OnErrorContainer">#7F1D1D</Color>
+
+    <!-- ─── Warning / Caution ─── -->
+    <Color x:Key="Warning">#F59E0B</Color>
+    <Color x:Key="OnWarning">#FFFFFF</Color>
+    <Color x:Key="WarningContainer">#FEF3C7</Color>
+    <Color x:Key="OnWarningContainer">#78350F</Color>
+
+    <!-- ─── Success ─── -->
+    <Color x:Key="Success">#10B981</Color>
+    <Color x:Key="OnSuccess">#FFFFFF</Color>
+    <Color x:Key="SuccessContainer">#D1FAE5</Color>
+    <Color x:Key="OnSuccessContainer">#064E3B</Color>
+
+    <!-- ─── Info ─── -->
+    <Color x:Key="Info">#3B82F6</Color>
+    <Color x:Key="InfoContainer">#DBEAFE</Color>
+
+    <!-- ─── Surface & Background ─── -->
+    <Color x:Key="Background">#F8F9FA</Color>
+    <Color x:Key="OnBackground">#1A1A2E</Color>
+    <Color x:Key="Surface">#FFFFFF</Color>
+    <Color x:Key="OnSurface">#1A1A2E</Color>
+    <Color x:Key="SurfaceVariant">#F1F3F4</Color>
+    <Color x:Key="OnSurfaceVariant">#5F6368</Color>
+
+    <!-- ─── Surface Elevation Layers ─── -->
+    <Color x:Key="SurfaceLowest">#FFFFFF</Color>
+    <Color x:Key="SurfaceLow">#F8F9FA</Color>
+    <Color x:Key="SurfaceMid">#F1F3F4</Color>
+    <Color x:Key="SurfaceHigh">#E8EAED</Color>
+    <Color x:Key="SurfaceHighest">#DADCE0</Color>
+
+    <!-- ─── Outline ─── -->
+    <Color x:Key="Outline">#DADCE0</Color>
+    <Color x:Key="OutlineLight">#E8EAED</Color>
+    <Color x:Key="OutlineVariant">#F1F3F4</Color>
+
+    <!-- ─── Inverse ─── -->
+    <Color x:Key="InverseSurface">#303134</Color>
+    <Color x:Key="InverseOnSurface">#F1F3F4</Color>
+    <Color x:Key="InversePrimary">#C4B5FD</Color>
+
+    <!-- ─── Sidebar Specific ─── -->
+    <Color x:Key="SidebarBg">#1A1A2E</Color>
+    <Color x:Key="SidebarSurface">#232340</Color>
+    <Color x:Key="SidebarHover">#2D2D50</Color>
+    <Color x:Key="SidebarActive">#5B4DFF</Color>
+    <Color x:Key="SidebarText">#9CA3AF</Color>
+    <Color x:Key="SidebarTextActive">#FFFFFF</Color>
+    <Color x:Key="SidebarDivider">#2D2D50</Color>
+    <Color x:Key="SidebarHeaderBg">#151528</Color>
+
+    <!-- ─── Status Colors ─── -->
+    <Color x:Key="StatusAvailable">#10B981</Color>
+    <Color x:Key="StatusInUse">#3B82F6</Color>
+    <Color x:Key="StatusDamaged">#F59E0B</Color>
+    <Color x:Key="StatusInRepair">#EF4444</Color>
+    <Color x:Key="StatusRetired">#9CA3AF</Color>
+
+    <!-- ─── Allocation Tier Colors ─── -->
+    <Color x:Key="AllocationSoft">#F59E0B</Color>
+    <Color x:Key="AllocationHard">#5B4DFF</Color>
+
+    <!-- ─── Calendar / Scheduling ─── -->
+    <Color x:Key="CalendarToday">#5B4DFF</Color>
+    <Color x:Key="CalendarWeekend">#F1F3F4</Color>
+    <Color x:Key="CalendarEvent">#EEEAFF</Color>
+    <Color x:Key="CalendarConflict">#FEE2E2</Color>
+    <Color x:Key="CalendarBorder">#E8EAED</Color>
+
+    <!-- ─── Gradient Stops (for brushes) ─── -->
+    <Color x:Key="GradientStart">#5B4DFF</Color>
+    <Color x:Key="GradientEnd">#0891B2</Color>
+
+    <!-- ─── Legacy / Neutral Grays ─── -->
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+    <Color x:Key="Gray50">#F8F9FA</Color>
+    <Color x:Key="Gray100">#F1F3F4</Color>
+    <Color x:Key="Gray200">#E8EAED</Color>
+    <Color x:Key="Gray300">#DADCE0</Color>
+    <Color x:Key="Gray400">#BDC1C6</Color>
+    <Color x:Key="Gray500">#9CA3AF</Color>
+    <Color x:Key="Gray600">#5F6368</Color>
+    <Color x:Key="Gray700">#3C4043</Color>
+    <Color x:Key="Gray800">#303134</Color>
+    <Color x:Key="Gray900">#1A1A2E</Color>
+    <Color x:Key="Gray950">#0F0F1A</Color>
+
+    <!-- ─── Brushes ─── -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}" />
+    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}" />
+    <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource Error}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}" />
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Warning}" />
+    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}" />
+    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource Surface}" />
+    <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource SidebarBg}" />
+
+</ResourceDictionary>

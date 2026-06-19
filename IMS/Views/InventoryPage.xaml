@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.InventoryPage"
+             x:DataType="vm:InventoryViewModel"
+             Title="Inventory">
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="24" RowSpacing="16">
+
+        <!-- ─── Header ─── -->
+        <VerticalStackLayout Grid.Row="0" Spacing="4">
+            <Label Text="Inventory" Style="{StaticResource HeadlineMedium}" />
+            <Label Text="Browse and manage your asset catalog"
+                   Style="{StaticResource BodyMedium}" TextColor="{StaticResource OnSurfaceVariant}" />
+        </VerticalStackLayout>
+
+        <!-- ─── Search & Category Breadcrumb ─── -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <SearchBar Grid.Column="0" Placeholder="Search by serial, barcode, or SKU..."
+                       Text="{Binding SearchText}"
+                       SearchCommand="{Binding SearchCommand}"
+                       Style="{StaticResource ModernSearchBar}"
+                       WidthRequest="320"
+                       HeightRequest="40" />
+            <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center"
+                                   IsVisible="{Binding IsCategorySelected}">
+                <Button Text="All Categories" Command="{Binding ClearCategoryCommand}"
+                        Style="{StaticResource TextButton}" />
+                <Label Text="›" VerticalOptions="Center" FontSize="18"
+                       TextColor="{StaticResource OnSurfaceVariant}" />
+                <Label Text="{Binding SelectedCategoryName}" Style="{StaticResource TitleSmall}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Grid>
+
+        <!-- ─── Main Content ─── -->
+        <Grid Grid.Row="2" ColumnDefinitions="260,*" ColumnSpacing="16">
+
+            <!-- Category Tree -->
+            <ScrollView Grid.Column="0">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Categories" Style="{StaticResource TitleMedium}" Margin="0,0,0,8" />
+                    <CollectionView ItemsSource="{Binding CategoryTree}"
+                                    SelectionMode="Single"
+                                    SelectionChangedCommand="{Binding SelectCategoryCommand}"
+                                    SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:AssetCategory">
+                                <Frame Padding="14,10" Margin="0,2"
+                                       BackgroundColor="{StaticResource SurfaceVariant}"
+                                       CornerRadius="8" HasShadow="False" BorderColor="Transparent">
+                                    <HorizontalStackLayout Spacing="8">
+                                        <Label Text="📁" FontSize="12" VerticalOptions="Center" />
+                                        <Label Text="{Binding Name}" Style="{StaticResource BodyMedium}" />
+                                    </HorizontalStackLayout>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Asset List -->
+            <ScrollView Grid.Column="1">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding Assets.Count, StringFormat='{0} Assets'}"
+                           Style="{StaticResource TitleMedium}" />
+                    <CollectionView ItemsSource="{Binding Assets}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:SerializedAsset">
+                                <Frame Style="{StaticResource OutlinedCard}" Margin="0,4" Padding="16">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                            <Label Text="{Binding SerialNumber}" Style="{StaticResource TitleSmall}" />
+                                            <HorizontalStackLayout Spacing="12">
+                                                <Label Text="{Binding Sku}" Style="{StaticResource BodySmall}"
+                                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                                                <Label Text="{Binding BarcodeRfid}" Style="{StaticResource LabelSmall}"
+                                                       TextColor="{StaticResource Gray400}" />
+                                            </HorizontalStackLayout>
+                                        </VerticalStackLayout>
+                                        <Frame Grid.Column="1" Padding="10,5" CornerRadius="20"
+                                               BackgroundColor="{StaticResource StatusAvailable}"
+                                               HasShadow="False" BorderColor="Transparent"
+                                               VerticalOptions="Center">
+                                            <Label Text="{Binding CurrentStatus}" TextColor="White"
+                                                   Style="{StaticResource LabelSmall}" />
+                                        </Frame>
+                                        <Label Grid.Column="2" Text="{Binding CurrentMeterReading, StringFormat='{0} hrs'}"
+                                               Style="{StaticResource BodySmall}" VerticalOptions="Center"
+                                               TextColor="{StaticResource OnSurfaceVariant}" />
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="Select a category or search for assets"
+                                   Style="{StaticResource BodyLarge}"
+                                   TextColor="{StaticResource OnSurfaceVariant}"
+                                   HorizontalOptions="Center" VerticalOptions="Center" Margin="0,40" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+    </Grid>
+</ContentPage>

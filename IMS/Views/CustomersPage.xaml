@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:conv="clr-namespace:IMS.Converters"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.CustomersPage"
+             x:DataType="vm:CustomersViewModel"
+             Title="Customers">
+
+    <ContentPage.Resources>
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+    </ContentPage.Resources>
+
+    <Grid ColumnDefinitions="360,*" Padding="24" ColumnSpacing="16">
+
+        <!-- ─── Customer List ─── -->
+        <ScrollView Grid.Column="0">
+            <VerticalStackLayout Spacing="12">
+                <Label Text="Customers" Style="{StaticResource HeadlineSmall}" />
+                <SearchBar Placeholder="Search customers..."
+                           Text="{Binding SearchText}"
+                           SearchCommand="{Binding SearchCommand}"
+                           Style="{StaticResource ModernSearchBar}"
+                           HeightRequest="40" />
+                <CollectionView ItemsSource="{Binding Customers}" SelectionMode="Single"
+                                SelectionChangedCommand="{Binding SelectCustomerCommand}"
+                                SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Customer">
+                            <Frame Style="{StaticResource CompactCard}" Margin="0,3" Padding="14,12">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                        <Label Text="{Binding AccountName}" Style="{StaticResource BodyMedium}" />
+                                        <Label Text="{Binding ContactEmail}" Style="{StaticResource LabelSmall}"
+                                               TextColor="{StaticResource OnSurfaceVariant}" />
+                                    </VerticalStackLayout>
+                                    <Frame Grid.Column="1" Padding="8,4" CornerRadius="20"
+                                           BackgroundColor="{StaticResource StatusAvailable}"
+                                           HasShadow="False" BorderColor="Transparent"
+                                           VerticalOptions="Center">
+                                        <Label Text="{Binding CreditStatus}" TextColor="White"
+                                               Style="{StaticResource LabelSmall}" />
+                                    </Frame>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ─── Customer Detail + Projects ─── -->
+        <ScrollView Grid.Column="1" IsVisible="{Binding IsCustomerSelected}">
+            <VerticalStackLayout Spacing="16">
+                <Label Text="{Binding SelectedCustomer.AccountName}" Style="{StaticResource HeadlineSmall}" />
+                <Frame Style="{StaticResource ElevatedCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="8">
+                            <Label Grid.Row="0" Grid.Column="0" Text="Email" Style="{StaticResource LabelLarge}" />
+                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding SelectedCustomer.ContactEmail}"
+                                   Style="{StaticResource BodyMedium}" />
+                            <Label Grid.Row="1" Grid.Column="0" Text="Phone" Style="{StaticResource LabelLarge}" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding SelectedCustomer.Phone}"
+                                   Style="{StaticResource BodyMedium}" />
+                            <Label Grid.Row="2" Grid.Column="0" Text="Credit Status" Style="{StaticResource LabelLarge}" />
+                            <Frame Grid.Row="2" Grid.Column="1" Padding="10,5" CornerRadius="20"
+                                   BackgroundColor="{StaticResource StatusAvailable}"
+                                   HasShadow="False" BorderColor="Transparent"
+                                   HorizontalOptions="Start">
+                                <Label Text="{Binding SelectedCustomer.CreditStatus}" TextColor="White"
+                                       Style="{StaticResource LabelSmall}" />
+                            </Frame>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Label Text="Projects" Style="{StaticResource TitleMedium}" Margin="0,4,0,0" />
+                <CollectionView ItemsSource="{Binding Projects}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:Project">
+                            <Frame Style="{StaticResource OutlinedCard}" Margin="0,3" Padding="16">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                        <Label Text="{Binding ProjectName}" Style="{StaticResource BodyMedium}" />
+                                        <Label Style="{StaticResource LabelSmall}" TextColor="{StaticResource OnSurfaceVariant}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding StartDate, StringFormat='{0:MMM dd}'}" />
+                                                    <Span Text=" → " />
+                                                    <Span Text="{Binding EndDate, StringFormat='{0:MMM dd, yyyy}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                    <Frame Grid.Column="1" Padding="8,4" CornerRadius="6"
+                                           BackgroundColor="{StaticResource PrimaryContainer}"
+                                           HasShadow="False" BorderColor="Transparent"
+                                           VerticalOptions="Center">
+                                        <Label Text="Active" Style="{StaticResource LabelSmall}"
+                                               TextColor="{StaticResource OnPrimaryContainer}" />
+                                    </Frame>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ─── No Selection ─── -->
+        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center"
+                             IsVisible="{Binding IsCustomerSelected, Converter={StaticResource InverseBool}}">
+            <Label Text="Select a customer to view details"
+                   Style="{StaticResource BodyLarge}"
+                   TextColor="{StaticResource OnSurfaceVariant}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

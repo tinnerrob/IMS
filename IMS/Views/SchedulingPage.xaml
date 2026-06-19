@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:IMS.Controls"
+             xmlns:viewmodels="clr-namespace:IMS.ViewModels"
+             x:Class="IMS.Views.SchedulingPage"
+             Title="Scheduling"
+             BackgroundColor="{StaticResource PageBackground}">
+
+    <Grid ColumnDefinitions="320,*,380"
+          Padding="0">
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- LEFT PANEL: Resource Library (Categories/Assets/Labor) -->
+        <!-- ════════════════════════════════════════════ -->
+        <Border Grid.Column="0"
+                BackgroundColor="{StaticResource Surface}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="0"
+                Padding="0">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto"
+                  Padding="0">
+
+                <!-- Panel Header -->
+                <Border Grid.Row="0"
+                        BackgroundColor="{StaticResource Primary}"
+                        Padding="16,14">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Resource Library"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="White" />
+                        <Label Text="Drag items onto the calendar"
+                               FontSize="11"
+                               TextColor="#CCFFFFFF" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Project Selector -->
+                <Border Grid.Row="1"
+                        BackgroundColor="{StaticResource Surface}"
+                        Padding="12,10"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto"
+                          RowDefinitions="Auto,Auto"
+                          ColumnSpacing="8"
+                          RowSpacing="4">
+
+                        <Label Grid.Row="0" Grid.Column="0"
+                               Text="Selected Project"
+                               FontSize="10"
+                               TextColor="{StaticResource TextSecondary}" />
+
+                        <Border Grid.Row="1" Grid.Column="0"
+                                BackgroundColor="{StaticResource SurfaceContainer}"
+                                Stroke="{StaticResource BorderColor}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 8"
+                                Padding="12,8">
+                            <Picker x:Name="ProjectPicker"
+                                    Title="Select a project..."
+                                    FontSize="13"
+                                    TextColor="{StaticResource TextPrimary}"
+                                    TitleColor="{StaticResource TextSecondary}"
+                                    ItemsSource="{Binding Projects}"
+                                    ItemDisplayBinding="{Binding ProjectName}"
+                                    SelectedItem="{Binding SelectedProject, Mode=TwoWay}" />
+                        </Border>
+
+                        <Button Grid.Row="1" Grid.Column="1"
+                                Text="✕"
+                                FontSize="14"
+                                TextColor="{StaticResource TextSecondary}"
+                                BackgroundColor="Transparent"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                Padding="0"
+                                CornerRadius="18"
+                                Command="{Binding ClearProjectCommand}" />
+                    </Grid>
+                </Border>
+
+                <!-- Search Bar -->
+                <Border Grid.Row="2"
+                        BackgroundColor="{StaticResource Surface}"
+                        Padding="12,8"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="0,0,0,1">
+                    <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                            Stroke="{StaticResource BorderColor}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="12,8">
+                        <Entry Placeholder="Search resources..."
+                               PlaceholderColor="{StaticResource TextSecondary}"
+                               Text="{Binding AssetSearchText, Mode=TwoWay}"
+                               TextChanged="OnAssetSearchChanged"
+                               FontSize="13"
+                               TextColor="{StaticResource TextPrimary}"
+                               BackgroundColor="Transparent" />
+                    </Border>
+                </Border>
+
+                <!-- Tab Buttons: Categories | Assets | Labor -->
+                <Grid Grid.Row="3"
+                      RowDefinitions="Auto,*"
+                      Padding="0">
+
+                    <!-- Tab bar -->
+                    <HorizontalStackLayout Grid.Row="0"
+                                           Spacing="0"
+                                           Padding="0"
+                                           BackgroundColor="{StaticResource Surface}">
+                        <Button Text="Categories"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                Padding="12,10"
+                                HeightRequest="38"
+                                CornerRadius="0"
+                                BackgroundColor="{Binding SchedulingTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=Categories}"
+                                TextColor="{Binding SchedulingTab, Converter={StaticResource TabTextConverter}, ConverterParameter=Categories}"
+                                Command="{Binding SwitchSchedulingTabCommand}"
+                                CommandParameter="Categories" />
+                        <Button Text="Assets"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                Padding="12,10"
+                                HeightRequest="38"
+                                CornerRadius="0"
+                                BackgroundColor="{Binding SchedulingTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=Assets}"
+                                TextColor="{Binding SchedulingTab, Converter={StaticResource TabTextConverter}, ConverterParameter=Assets}"
+                                Command="{Binding SwitchSchedulingTabCommand}"
+                                CommandParameter="Assets" />
+                        <Button Text="Labor"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                Padding="12,10"
+                                HeightRequest="38"
+                                CornerRadius="0"
+                                BackgroundColor="{Binding SchedulingTab, Converter={StaticResource TabActiveConverter}, ConverterParameter=Labor}"
+                                TextColor="{Binding SchedulingTab, Converter={StaticResource TabTextConverter}, ConverterParameter=Labor}"
+                                Command="{Binding SwitchSchedulingTabCommand}"
+                                CommandParameter="Labor" />
+                    </HorizontalStackLayout>
+
+                    <!-- Scrollable item list -->
+                    <ScrollView Grid.Row="1"
+                                BackgroundColor="{StaticResource Surface}">
+                        <CollectionView ItemsSource="{Binding FilteredSchedulingItems}"
+                                        SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="viewmodels:DraggableSchedulingItem">
+                                    <Border Padding="12,8"
+                                            Margin="4,2"
+                                            BackgroundColor="{StaticResource SurfaceContainer}"
+                                            Stroke="{StaticResource BorderColor}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto"
+                                              ColumnSpacing="10">
+                                            <!-- Status indicator dot -->
+                                            <Ellipse Grid.Column="0"
+                                                     WidthRequest="8"
+                                                     HeightRequest="8"
+                                                     Fill="{Binding StatusColor}"
+                                                     VerticalOptions="Center" />
+
+                                            <!-- Name and subtitle -->
+                                            <VerticalStackLayout Grid.Column="1"
+                                                                 Spacing="1"
+                                                                 VerticalOptions="Center">
+                                                <Label Text="{Binding DisplayName}"
+                                                       FontSize="13"
+                                                       FontAttributes="Bold"
+                                                       TextColor="{StaticResource TextPrimary}"
+                                                       LineBreakMode="TailTruncation" />
+                                                <Label Text="{Binding Subtitle}"
+                                                       FontSize="10"
+                                                       TextColor="{StaticResource TextSecondary}" />
+                                            </VerticalStackLayout>
+
+                                            <!-- Drag handle -->
+                                            <Label Grid.Column="2"
+                                                   Text="⠿"
+                                                   FontSize="18"
+                                                   TextColor="{StaticResource TextSecondary}"
+                                                   VerticalOptions="Center">
+                                                <Label.GestureRecognizers>
+                                                    <DragGestureRecognizer CanDrag="True"
+                                                                           DragStarting="OnDragStarting" />
+                                                </Label.GestureRecognizers>
+                                            </Label>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                            <CollectionView.EmptyView>
+                                <VerticalStackLayout Padding="20"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Center">
+                                    <Label Text="No resources found"
+                                           FontSize="14"
+                                           TextColor="{StaticResource TextSecondary}"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+                    </ScrollView>
+                </Grid>
+
+                <!-- Bottom stats bar -->
+                <Border Grid.Row="4"
+                        BackgroundColor="{StaticResource SurfaceContainer}"
+                        Padding="12,10"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="1,0,0,0">
+                    <Grid ColumnDefinitions="*,*">
+                        <VerticalStackLayout Grid.Column="0" Spacing="1">
+                            <Label Text="Total Allocations"
+                                   FontSize="9"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="{Binding TotalAllocations}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="1">
+                            <Label Text="Conflicts"
+                                   FontSize="9"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="{Binding TotalConflicts}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Error}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- CENTER: Calendar -->
+        <!-- ════════════════════════════════════════════ -->
+        <Grid Grid.Column="1"
+              RowDefinitions="Auto,*"
+              Padding="0"
+              BackgroundColor="{StaticResource PageBackground}">
+
+            <!-- Calendar Toolbar -->
+            <Border Grid.Row="0"
+                    BackgroundColor="{StaticResource Surface}"
+                    Padding="12,8"
+                    Stroke="{StaticResource BorderColor}"
+                    StrokeThickness="0,0,0,1">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+                      ColumnSpacing="8">
+
+                    <!-- Date range display -->
+                    <Label Grid.Column="0"
+                           Text="{Binding DateRangeText}"
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource TextPrimary}"
+                           VerticalOptions="Center" />
+
+                    <!-- Search -->
+                    <Border Grid.Column="1"
+                            BackgroundColor="{StaticResource SurfaceContainer}"
+                            Stroke="{StaticResource BorderColor}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 8"
+                            Padding="10,6"
+                            Margin="0,0,8,0">
+                        <Entry Placeholder="Search projects..."
+                               PlaceholderColor="{StaticResource TextSecondary}"
+                               Text="{Binding SearchText, Mode=TwoWay}"
+                               TextChanged="OnSearchTextChanged"
+                               FontSize="12"
+                               TextColor="{StaticResource TextPrimary}"
+                               BackgroundColor="Transparent" />
+                    </Border>
+
+                    <!-- Zoom controls -->
+                    <Button Grid.Column="2"
+                            Text="−"
+                            FontSize="16"
+                            FontAttributes="Bold"
+                            WidthRequest="32"
+                            HeightRequest="32"
+                            Padding="0"
+                            CornerRadius="16"
+                            BackgroundColor="{StaticResource SurfaceContainer}"
+                            TextColor="{StaticResource TextPrimary}"
+                            Command="{Binding ZoomOutCommand}" />
+
+                    <Button Grid.Column="3"
+                            Text="+"
+                            FontSize="16"
+                            FontAttributes="Bold"
+                            WidthRequest="32"
+                            HeightRequest="32"
+                            Padding="0"
+                            CornerRadius="16"
+                            BackgroundColor="{StaticResource SurfaceContainer}"
+                            TextColor="{StaticResource TextPrimary}"
+                            Command="{Binding ZoomInCommand}" />
+
+                    <Button Grid.Column="4"
+                            Text="Today"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            Padding="12,6"
+                            CornerRadius="8"
+                            BackgroundColor="{StaticResource Primary}"
+                            TextColor="White"
+                            Command="{Binding GoToTodayCommand}" />
+
+                    <Button Grid.Column="5"
+                            Text="Refresh"
+                            FontSize="11"
+                            Padding="12,6"
+                            CornerRadius="8"
+                            BackgroundColor="{StaticResource SurfaceContainer}"
+                            TextColor="{StaticResource TextPrimary}"
+                            Command="{Binding RefreshCommand}" />
+                </Grid>
+            </Border>
+
+            <!-- Calendar Control -->
+            <controls:SchedulingCalendar Grid.Row="1"
+                                         x:Name="CalendarControl"
+                                         Margin="0" />
+        </Grid>
+
+        <!-- ════════════════════════════════════════════ -->
+        <!-- RIGHT PANEL: Event Details / Edit -->
+        <!-- ════════════════════════════════════════════ -->
+        <Border Grid.Column="2"
+                BackgroundColor="{StaticResource Surface}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="0"
+                IsVisible="{Binding IsDetailPanelVisible}">
+            <Grid RowDefinitions="Auto,*,Auto"
+                  Padding="0">
+
+                <!-- Detail Header -->
+                <Border Grid.Row="0"
+                        BackgroundColor="{StaticResource Primary}"
+                        Padding="16,14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label Text="{Binding DetailPanelTitle}"
+                                   FontSize="15"
+                                   FontAttributes="Bold"
+                                   TextColor="White"
+                                   LineBreakMode="TailTruncation" />
+                            <Label Text="{Binding EditingDetail.EventType}"
+                                   FontSize="11"
+                                   TextColor="#CCFFFFFF" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1"
+                                Text="✕"
+                                FontSize="16"
+                                TextColor="White"
+                                BackgroundColor="Transparent"
+                                WidthRequest="36"
+                                HeightRequest="36"
+                                Padding="0"
+                                CornerRadius="18"
+                                Command="{Binding ClearSelectionCommand}" />
+                    </Grid>
+                </Border>
+
+                <!-- Detail Form -->
+                <ScrollView Grid.Row="1"
+                            BackgroundColor="{StaticResource Surface}">
+                    <VerticalStackLayout Padding="16"
+                                         Spacing="16"
+                                         BindingContext="{Binding EditingDetail}">
+
+                        <!-- Title -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Title"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Entry Text="{Binding Title, Mode=TwoWay}"
+                                       FontSize="13"
+                                       TextColor="{StaticResource TextPrimary}"
+                                       BackgroundColor="Transparent" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Project Name (read-only) -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Project"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Label Text="{Binding ProjectName}"
+                                       FontSize="13"
+                                       TextColor="{StaticResource TextPrimary}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Start Date -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Start Date"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <DatePicker Date="{Binding StartDate, Mode=TwoWay}"
+                                            FontSize="13"
+                                            TextColor="{StaticResource TextPrimary}"
+                                            BackgroundColor="Transparent" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- End Date -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="End Date"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <DatePicker Date="{Binding EndDate, Mode=TwoWay}"
+                                            FontSize="13"
+                                            TextColor="{StaticResource TextPrimary}"
+                                            BackgroundColor="Transparent" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Tier (read-only) -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Allocation Tier"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Label Text="{Binding Tier}"
+                                       FontSize="13"
+                                       TextColor="{StaticResource TextPrimary}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Labor-specific fields -->
+                        <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                Stroke="{StaticResource BorderColor}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 8"
+                                Padding="12"
+                                IsVisible="{Binding EventType, Converter={StaticResource IsLaborConverter}}">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="Labor Details"
+                                       FontSize="12"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}" />
+
+                                <Grid ColumnDefinitions="*,*"
+                                      ColumnSpacing="12">
+                                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                        <Label Text="Technician"
+                                               FontSize="10"
+                                               TextColor="{StaticResource TextSecondary}" />
+                                        <Label Text="{Binding TechnicianName}"
+                                               FontSize="13"
+                                               TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="Hourly Rate"
+                                               FontSize="10"
+                                               TextColor="{StaticResource TextSecondary}" />
+                                        <Label Text="{Binding HourlyRate, StringFormat='${0:F2}'}"
+                                               FontSize="13"
+                                               TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="Estimated Hours"
+                                           FontSize="10"
+                                           TextColor="{StaticResource TextSecondary}" />
+                                    <Border BackgroundColor="{StaticResource Surface}"
+                                            Stroke="{StaticResource BorderColor}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 6"
+                                            Padding="10,6">
+                                        <Entry Text="{Binding EstimatedHours, Mode=TwoWay}"
+                                               Keyboard="Numeric"
+                                               FontSize="13"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               BackgroundColor="Transparent" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <!-- Notes -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Notes"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Editor Text="{Binding Notes, Mode=TwoWay}"
+                                        FontSize="13"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        BackgroundColor="Transparent"
+                                        HeightRequest="80"
+                                        Placeholder="Add notes..."
+                                        PlaceholderColor="{StaticResource TextSecondary}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Details -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Details"
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextSecondary}" />
+                            <Border BackgroundColor="{StaticResource SurfaceContainer}"
+                                    Stroke="{StaticResource BorderColor}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="12,8">
+                                <Editor Text="{Binding Details, Mode=TwoWay}"
+                                        FontSize="13"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        BackgroundColor="Transparent"
+                                        HeightRequest="100"
+                                        Placeholder="Add detailed information..."
+                                        PlaceholderColor="{StaticResource TextSecondary}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <!-- Conflict Warning -->
+                        <Border BackgroundColor="{StaticResource ErrorContainer}"
+                                Stroke="{StaticResource Error}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 8"
+                                Padding="12"
+                                IsVisible="{Binding HasConflict}">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="⚠️ Scheduling Conflict"
+                                       FontSize="12"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Error}" />
+                                <Label Text="{Binding ConflictDescription}"
+                                       FontSize="11"
+                                       TextColor="{StaticResource Error}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <!-- Action Buttons -->
+                <Border Grid.Row="2"
+                        BackgroundColor="{StaticResource SurfaceContainer}"
+                        Padding="16,12"
+                        Stroke="{StaticResource BorderColor}"
+                        StrokeThickness="1,0,0,0">
+                    <Grid ColumnDefinitions="*,*"
+                          ColumnSpacing="12">
+                        <Button Grid.Column="0"
+                                Text="Delete"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                BackgroundColor="{StaticResource ErrorContainer}"
+                                TextColor="{StaticResource Error}"
+                                Command="{Binding DeleteEventCommand}" />
+                        <Button Grid.Column="1"
+                                Text="Save Changes"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                Padding="12,10"
+                                CornerRadius="8"
+                                BackgroundColor="{StaticResource Primary}"
+                                TextColor="White"
+                                Command="{Binding SaveEventDetailsCommand}" />
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Empty state when no detail panel -->
+        <Border Grid.Column="2"
+                BackgroundColor="{StaticResource Surface}"
+                Stroke="{StaticResource BorderColor}"
+                StrokeThickness="0"
+                IsVisible="{Binding IsDetailPanelVisible, Converter={StaticResource InverseBoolConverter}}">
+            <VerticalStackLayout HorizontalOptions="Center"
+                                 VerticalOptions="Center"
+                                 Spacing="12"
+                                 Padding="24">
+                <Label Text="📋"
+                       FontSize="40"
+                       HorizontalOptions="Center" />
+                <Label Text="No Event Selected"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}"
+                       HorizontalOptions="Center" />
+                <Label Text="Tap on a calendar event to view and edit its details."
+                       FontSize="12"
+                       TextColor="{StaticResource TextSecondary}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

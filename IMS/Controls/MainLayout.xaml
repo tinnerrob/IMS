@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="IMS.Controls.MainLayout"
+             x:Name="layoutRoot">
+
+    <Grid ColumnDefinitions="260,*">
+
+        <!-- ═══════════════════════════════════════════════════════
+             MODERN DARK SIDEBAR
+             Premium dark theme with clean navigation hierarchy.
+             ═══════════════════════════════════════════════════════ -->
+        <Grid Grid.Column="0" BackgroundColor="{StaticResource SidebarBg}">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+                <!-- ─── Brand / Logo Header ─── -->
+                <VerticalStackLayout Grid.Row="0" Padding="20,24,20,16"
+                                     BackgroundColor="{StaticResource SidebarHeaderBg}">
+                    <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                        <!-- Logo Icon -->
+                        <Frame WidthRequest="40" HeightRequest="40" CornerRadius="10"
+                               BackgroundColor="{StaticResource SidebarActive}" Padding="0"
+                               HasShadow="False" BorderColor="Transparent">
+                            <Label Text="IMS" FontSize="16" FontAttributes="Bold"
+                                   TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Frame>
+                        <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+                            <Label x:Name="OrgNameLabel" Text="Organization"
+                                   Style="{StaticResource TitleSmall}"
+                                   TextColor="{StaticResource SidebarTextActive}" />
+                            <Label x:Name="UserRoleLabel" Text="Role"
+                                   Style="{StaticResource LabelSmall}"
+                                   TextColor="{StaticResource SidebarText}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- ─── User Info Bar ─── -->
+                <Frame Grid.Row="1" Margin="12,8,12,4" Padding="12,8"
+                       BackgroundColor="{StaticResource SidebarSurface}"
+                       CornerRadius="10" HasShadow="False" BorderColor="Transparent">
+                    <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                        <!-- Avatar Circle -->
+                        <Frame WidthRequest="32" HeightRequest="32" CornerRadius="16"
+                               BackgroundColor="{StaticResource SidebarActive}" Padding="0"
+                               HasShadow="False" BorderColor="Transparent">
+                            <Label x:Name="UserAvatarLabel" Text="U" FontSize="13" FontAttributes="Bold"
+                                   TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Frame>
+                        <VerticalStackLayout Spacing="0" VerticalOptions="Center">
+                            <Label x:Name="UserNameLabel" Text="User"
+                                   Style="{StaticResource BodyMedium}"
+                                   TextColor="{StaticResource SidebarTextActive}" />
+                            <Label x:Name="UserEmailLabel" Text="email@company.com"
+                                   Style="{StaticResource LabelSmall}"
+                                   TextColor="{StaticResource SidebarText}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </Frame>
+
+                <!-- ─── Navigation Items ─── -->
+                <ScrollView Grid.Row="2" Margin="8,4,8,0">
+                    <VerticalStackLayout Spacing="2">
+
+                        <!-- Section Label -->
+                        <Label Text="MAIN MENU" Style="{StaticResource LabelSmall}"
+                               TextColor="{StaticResource SidebarText}"
+                               Margin="16,16,16,8" />
+
+                        <Button x:Name="NavDashboard" Text="Dashboard"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                        <Button x:Name="NavInventory" Text="Inventory"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                        <Button x:Name="NavScheduling" Text="Scheduling"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                        <Button x:Name="NavSmr" Text="SMR"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+
+                        <BoxView Style="{StaticResource DividerDark}" Margin="16,8" />
+
+                        <Label Text="BUSINESS" Style="{StaticResource LabelSmall}"
+                               TextColor="{StaticResource SidebarText}"
+                               Margin="16,8,16,8" />
+
+                        <Button x:Name="NavCustomers" Text="Customers"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                        <Button x:Name="NavLeases" Text="Leases"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                        <Button x:Name="NavExceptions" Text="Exceptions"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                        <Button x:Name="NavReports" Text="Reports"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+
+                        <BoxView Style="{StaticResource DividerDark}" Margin="16,8" />
+
+                        <Label Text="SYSTEM" Style="{StaticResource LabelSmall}"
+                               TextColor="{StaticResource SidebarText}"
+                               Margin="16,8,16,8" />
+
+                        <Button x:Name="NavAdmin" Text="Admin"
+                                Style="{StaticResource SidebarNavItem}"
+                                Clicked="OnNavClicked" />
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <!-- ─── Logout Button ─── -->
+                <Button Grid.Row="3" x:Name="NavLogout" Text="Logout"
+                        Style="{StaticResource SidebarNavItem}"
+                        BackgroundColor="{StaticResource SidebarSurface}"
+                        TextColor="{StaticResource Error}"
+                        Margin="12,8,12,16"
+                        Clicked="OnLogoutClicked" />
+
+            </Grid>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════
+             CONTENT AREA
+             Clean white background for page content.
+             ═══════════════════════════════════════════════════════ -->
+        <Grid Grid.Column="1" BackgroundColor="{StaticResource Background}">
+            <!-- Page content will be swapped here -->
+            <ContentView x:Name="ContentArea" />
+        </Grid>
+
+        <!-- Separator -->
+        <BoxView Grid.Column="0" WidthRequest="1" HorizontalOptions="End"
+                 Color="{StaticResource SidebarDivider}" />
+
+    </Grid>
+
+</ContentView>

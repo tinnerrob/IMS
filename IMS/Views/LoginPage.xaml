@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             x:Class="IMS.Views.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Background}">
+
+    <Grid>
+        <!-- Decorative gradient background -->
+        <BoxView BackgroundColor="{StaticResource SidebarBg}"
+                 VerticalOptions="Fill" HorizontalOptions="Fill" />
+
+        <ScrollView>
+            <VerticalStackLayout Spacing="24" Padding="32" VerticalOptions="Center" MaximumWidthRequest="420">
+
+                <!-- ─── Logo / Brand ─── -->
+                <VerticalStackLayout Spacing="12" Margin="0,0,0,24">
+                    <Frame WidthRequest="72" HeightRequest="72" CornerRadius="20"
+                           BackgroundColor="{StaticResource Primary}" Padding="0"
+                           HasShadow="False" BorderColor="Transparent"
+                           HorizontalOptions="Center">
+                        <Label Text="IMS" FontSize="28" FontAttributes="Bold"
+                               TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Frame>
+                    <Label Text="Inventory Management System"
+                           Style="{StaticResource TitleMedium}"
+                           HorizontalOptions="Center"
+                           TextColor="{StaticResource SidebarText}" />
+                </VerticalStackLayout>
+
+                <!-- ─── Login Card ─── -->
+                <Frame BackgroundColor="{StaticResource Surface}"
+                       CornerRadius="16" Padding="32" HasShadow="True"
+                       BorderColor="Transparent">
+                    <VerticalStackLayout Spacing="20">
+
+                        <Label Text="Welcome back" Style="{StaticResource HeadlineSmall}" />
+                        <Label Text="Sign in to your account to continue"
+                               Style="{StaticResource BodyMedium}"
+                               TextColor="{StaticResource OnSurfaceVariant}" />
+
+                        <!-- Username -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Username" Style="{StaticResource LabelLarge}" />
+                            <Frame BackgroundColor="{StaticResource SurfaceVariant}"
+                                   CornerRadius="10" Padding="4,0" HasShadow="False"
+                                   BorderColor="{StaticResource OutlineLight}">
+                                <Entry Placeholder="Enter your username"
+                                       Text="{Binding Username}"
+                                       FontSize="15"
+                                       TextColor="{StaticResource OnSurface}"
+                                       PlaceholderColor="{StaticResource Gray400}"
+                                       BackgroundColor="Transparent"
+                                       HeightRequest="44" />
+                            </Frame>
+                        </VerticalStackLayout>
+
+                        <!-- Password -->
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Password" Style="{StaticResource LabelLarge}" />
+                            <Frame BackgroundColor="{StaticResource SurfaceVariant}"
+                                   CornerRadius="10" Padding="4,0" HasShadow="False"
+                                   BorderColor="{StaticResource OutlineLight}">
+                                <Entry Placeholder="Enter your password"
+                                       Text="{Binding Password}"
+                                       IsPassword="True"
+                                       FontSize="15"
+                                       TextColor="{StaticResource OnSurface}"
+                                       PlaceholderColor="{StaticResource Gray400}"
+                                       BackgroundColor="Transparent"
+                                       HeightRequest="44" />
+                            </Frame>
+                        </VerticalStackLayout>
+
+                        <!-- Error Message -->
+                        <Frame Padding="12,8" CornerRadius="8" HasShadow="False"
+                               BackgroundColor="{StaticResource ErrorContainer}"
+                               BorderColor="{StaticResource Error}"
+                               IsVisible="{Binding IsError}">
+                            <Label Text="{Binding ErrorMessage}"
+                                   Style="{StaticResource BodySmall}"
+                                   TextColor="{StaticResource OnErrorContainer}" />
+                        </Frame>
+
+                        <!-- Login Button -->
+                        <Button Text="Sign In"
+                                Command="{Binding LoginCommand}"
+                                Style="{StaticResource PrimaryButton}"
+                                HorizontalOptions="Fill"
+                                HeightRequest="48"
+                                FontSize="16"
+                                Margin="0,4,0,0" />
+
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- ─── Demo Credentials ─── -->
+                <Frame BackgroundColor="{StaticResource SidebarSurface}"
+                       CornerRadius="12" Padding="20" HasShadow="False"
+                       BorderColor="Transparent">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Demo Credentials"
+                               Style="{StaticResource LabelLarge}"
+                               TextColor="{StaticResource SidebarTextActive}" />
+                        <BoxView HeightRequest="1" Color="{StaticResource SidebarDivider}" />
+                        <Label Text="admin / admin — Full Access"
+                               Style="{StaticResource BodySmall}"
+                               TextColor="{StaticResource SidebarText}" />
+                        <Label Text="service / service — SMR Only"
+                               Style="{StaticResource BodySmall}"
+                               TextColor="{StaticResource SidebarText}" />
+                        <Label Text="logistics / logistics — Desk Ops"
+                               Style="{StaticResource BodySmall}"
+                               TextColor="{StaticResource SidebarText}" />
+                    </VerticalStackLayout>
+                </Frame>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

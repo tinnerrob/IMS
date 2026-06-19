@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.ReportsPage"
+             x:DataType="vm:ReportsViewModel"
+             Title="Reports">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="24">
+
+            <!-- ─── Header ─── -->
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Reports &amp; Analytics" Style="{StaticResource HeadlineMedium}" />
+                <Label Text="Availability look-ahead and cost of ownership insights"
+                       Style="{StaticResource BodyMedium}" TextColor="{StaticResource OnSurfaceVariant}" />
+            </VerticalStackLayout>
+
+            <!-- ─── Availability Look-Ahead ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="16">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="📊" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Availability Look-Ahead" Style="{StaticResource TitleMedium}" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="12">
+                        <Frame BackgroundColor="{StaticResource SurfaceVariant}"
+                               CornerRadius="10" Padding="12,4" HasShadow="False"
+                               BorderColor="{StaticResource OutlineLight}">
+                            <DatePicker Date="{Binding LookAheadDate}"
+                                        TextColor="{StaticResource OnSurface}"
+                                        BackgroundColor="Transparent" />
+                        </Frame>
+                        <Button Text="Check Availability" Command="{Binding UpdateLookAheadCommand}"
+                                Style="{StaticResource PrimaryButton}" />
+                    </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                        <Frame Grid.Column="0" Style="{StaticResource FilledCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding TotalAssets}" Style="{StaticResource HeadlineMedium}"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Total Assets" Style="{StaticResource LabelMedium}"
+                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                        <Frame Grid.Column="1" Style="{StaticResource FilledCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding AvailableOnDate}" Style="{StaticResource HeadlineMedium}"
+                                       TextColor="{StaticResource StatusAvailable}" />
+                                <Label Text="Available" Style="{StaticResource LabelMedium}"
+                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                        <Frame Grid.Column="2" Style="{StaticResource FilledCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding InUseOnDate}" Style="{StaticResource HeadlineMedium}"
+                                       TextColor="{StaticResource StatusInUse}" />
+                                <Label Text="In Use" Style="{StaticResource LabelMedium}"
+                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ─── Total Cost of Ownership ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="16">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="💰" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Total Cost of Ownership" Style="{StaticResource TitleMedium}" />
+                    </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                        <Frame Grid.Column="0" Style="{StaticResource FilledCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding TotalMaintenanceCost, StringFormat='{0:C0}'}"
+                                       Style="{StaticResource HeadlineSmall}"
+                                       TextColor="{StaticResource Primary}" />
+                                <Label Text="Total Maintenance" Style="{StaticResource LabelMedium}"
+                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                        <Frame Grid.Column="1" Style="{StaticResource FilledCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding TotalLaborCost, StringFormat='{0:C0}'}"
+                                       Style="{StaticResource HeadlineSmall}"
+                                       TextColor="{StaticResource Tertiary}" />
+                                <Label Text="Labor" Style="{StaticResource LabelMedium}"
+                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                        <Frame Grid.Column="2" Style="{StaticResource FilledCard}">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="{Binding TotalPartsCost, StringFormat='{0:C0}'}"
+                                       Style="{StaticResource HeadlineSmall}"
+                                       TextColor="{StaticResource Warning}" />
+                                <Label Text="Parts" Style="{StaticResource LabelMedium}"
+                                       TextColor="{StaticResource OnSurfaceVariant}" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </Grid>
+                    <Label Text="{Binding TotalTickets, StringFormat='Based on {0} service tickets'}"
+                           Style="{StaticResource BodySmall}" TextColor="{StaticResource OnSurfaceVariant}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ─── Category Utilization ─── -->
+            <Frame Style="{StaticResource ElevatedCard}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="📈" FontSize="18" VerticalOptions="Center" />
+                        <Label Text="Category Utilization" Style="{StaticResource TitleMedium}" />
+                    </HorizontalStackLayout>
+                    <CollectionView ItemsSource="{Binding CategoryUtilization}" HeightRequest="320">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:AssetCategory">
+                                <Frame Style="{StaticResource CompactCard}" Margin="0,2" Padding="14,10">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <Label Grid.Column="0" Text="{Binding Name}"
+                                               Style="{StaticResource BodyMedium}" />
+                                        <Frame Grid.Column="1" WidthRequest="120" HeightRequest="8" CornerRadius="4"
+                                               BackgroundColor="{StaticResource SurfaceHigh}"
+                                               HasShadow="False" BorderColor="Transparent"
+                                               Padding="0">
+                                            <BoxView WidthRequest="80" HeightRequest="8" CornerRadius="4"
+                                                     Color="{StaticResource Primary}"
+                                                     VerticalOptions="Start" HorizontalOptions="Start" />
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

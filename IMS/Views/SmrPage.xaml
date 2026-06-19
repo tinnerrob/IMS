@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:IMS.ViewModels"
+             xmlns:conv="clr-namespace:IMS.Converters"
+             xmlns:models="clr-namespace:IMS.Models"
+             x:Class="IMS.Views.SmrPage"
+             x:DataType="vm:SmrViewModel"
+             Title="SMR">
+
+    <ContentPage.Resources>
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+    </ContentPage.Resources>
+
+    <Grid ColumnDefinitions="360,*" Padding="24" ColumnSpacing="16">
+
+        <!-- ─── Ticket List ─── -->
+        <ScrollView Grid.Column="0">
+            <VerticalStackLayout Spacing="12">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="SMR Tickets" Style="{StaticResource HeadlineSmall}" />
+                    <Label Text="Service, Maintenance &amp; Repair"
+                           Style="{StaticResource BodySmall}" TextColor="{StaticResource OnSurfaceVariant}" />
+                </VerticalStackLayout>
+                <Frame Style="{StaticResource FilledCard}" Padding="12,8">
+                    <HorizontalStackLayout Spacing="8">
+                        <Label Text="●" TextColor="{StaticResource Warning}" FontSize="10"
+                               VerticalOptions="Center" />
+                        <Label Text="{Binding OpenTickets.Count, StringFormat='{0} Open Tickets'}"
+                               Style="{StaticResource LabelLarge}" />
+                    </HorizontalStackLayout>
+                </Frame>
+                <CollectionView ItemsSource="{Binding Tickets}" SelectionMode="Single"
+                                SelectionChangedCommand="{Binding SelectTicketCommand}"
+                                SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:SmrServiceTicket">
+                            <Frame Style="{StaticResource CompactCard}" Margin="0,3" Padding="14,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                    <BoxView Grid.Column="0" WidthRequest="3" CornerRadius="2"
+                                             Color="{StaticResource Warning}" VerticalOptions="Fill" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                        <Label Text="{Binding Description}" Style="{StaticResource BodySmall}"
+                                               LineBreakMode="TailTruncation" MaxLines="2" />
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Frame Padding="6,2" CornerRadius="4"
+                                                   BackgroundColor="{StaticResource PrimaryContainer}"
+                                                   HasShadow="False" BorderColor="Transparent">
+                                                <Label Text="{Binding TicketType}" Style="{StaticResource LabelSmall}"
+                                                       TextColor="{StaticResource OnPrimaryContainer}" />
+                                            </Frame>
+                                            <Label Text="{Binding CreatedAt, StringFormat='{0:MMM dd}'}"
+                                                   Style="{StaticResource LabelSmall}"
+                                                   TextColor="{StaticResource OnSurfaceVariant}" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                    <Frame Grid.Column="2" Padding="8,4" CornerRadius="20"
+                                           BackgroundColor="{StaticResource WarningContainer}"
+                                           HasShadow="False" BorderColor="Transparent"
+                                           VerticalOptions="Center">
+                                        <Label Text="{Binding TicketStatus}" Style="{StaticResource LabelSmall}"
+                                               TextColor="{StaticResource OnWarningContainer}" />
+                                    </Frame>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ─── Ticket Detail ─── -->
+        <ScrollView Grid.Column="1" IsVisible="{Binding IsTicketSelected}">
+            <VerticalStackLayout Spacing="16">
+                <Label Text="Ticket Details" Style="{StaticResource HeadlineSmall}" />
+                <Frame Style="{StaticResource ElevatedCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="{Binding SelectedTicket.Description}" Style="{StaticResource BodyLarge}" />
+                        <BoxView HeightRequest="1" Color="{StaticResource OutlineLight}" />
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto"
+                              ColumnSpacing="20" RowSpacing="8">
+                            <Label Grid.Row="0" Grid.Column="0" Text="Type" Style="{StaticResource LabelLarge}" />
+                            <Frame Grid.Row="0" Grid.Column="1" Padding="8,4" CornerRadius="6"
+                                   BackgroundColor="{StaticResource PrimaryContainer}"
+                                   HasShadow="False" BorderColor="Transparent"
+                                   HorizontalOptions="Start">
+                                <Label Text="{Binding SelectedTicket.TicketType}" Style="{StaticResource LabelSmall}"
+                                       TextColor="{StaticResource OnPrimaryContainer}" />
+                            </Frame>
+                            <Label Grid.Row="1" Grid.Column="0" Text="Status" Style="{StaticResource LabelLarge}" />
+                            <Frame Grid.Row="1" Grid.Column="1" Padding="8,4" CornerRadius="6"
+                                   BackgroundColor="{StaticResource WarningContainer}"
+                                   HasShadow="False" BorderColor="Transparent"
+                                   HorizontalOptions="Start">
+                                <Label Text="{Binding SelectedTicket.TicketStatus}" Style="{StaticResource LabelSmall}"
+                                       TextColor="{StaticResource OnWarningContainer}" />
+                            </Frame>
+                            <Label Grid.Row="2" Grid.Column="0" Text="Meter Reading" Style="{StaticResource LabelLarge}" />
+                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding SelectedTicket.CurrentMeterReading, StringFormat='{0} hrs'}"
+                                   Style="{StaticResource BodyMedium}" />
+                            <Label Grid.Row="3" Grid.Column="0" Text="Total Cost" Style="{StaticResource LabelLarge}" />
+                            <Label Grid.Row="3" Grid.Column="1" Text="{Binding TotalTicketCost, StringFormat='{0:C}'}"
+                                   Style="{StaticResource BodyMedium}" TextColor="{StaticResource Primary}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Labor Lines -->
+                <Label Text="Labor" Style="{StaticResource TitleMedium}" />
+                <CollectionView ItemsSource="{Binding LaborLines}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:SmrLaborLineItem">
+                            <Frame Style="{StaticResource OutlinedCard}" Margin="0,2" Padding="14,10">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
+                                    <Label Grid.Column="0" Text="{Binding TechnicianId}"
+                                           Style="{StaticResource BodySmall}" />
+                                    <Label Grid.Column="1" Text="{Binding HoursSpent, StringFormat='{0}h'}"
+                                           Style="{StaticResource BodySmall}"
+                                           TextColor="{StaticResource OnSurfaceVariant}" />
+                                    <Label Grid.Column="2" Text="{Binding CalculatedBurdenCost, StringFormat='{0:C}'}"
+                                           Style="{StaticResource BodySmall}"
+                                           TextColor="{StaticResource Primary}" />
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Parts Usage -->
+                <Label Text="Parts" Style="{StaticResource TitleMedium}" />
+                <CollectionView ItemsSource="{Binding PartsUsage}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:SmrPartsUsageLedger">
+                            <Frame Style="{StaticResource OutlinedCard}" Margin="0,2" Padding="14,10">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
+                                    <Label Grid.Column="0" Text="{Binding PartSkuOrId}"
+                                           Style="{StaticResource BodySmall}" />
+                                    <Label Grid.Column="1" Text="{Binding QuantityConsumed, StringFormat='x{0}'}"
+                                           Style="{StaticResource BodySmall}"
+                                           TextColor="{StaticResource OnSurfaceVariant}" />
+                                    <Label Grid.Column="2" Text="{Binding UnitCostAtConsumption, StringFormat='{0:C}'}"
+                                           Style="{StaticResource BodySmall}"
+                                           TextColor="{StaticResource Primary}" />
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ─── No Selection ─── -->
+        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="Center"
+                             IsVisible="{Binding IsTicketSelected, Converter={StaticResource InverseBool}}">
+            <Label Text="Select a ticket to view details"
+                   Style="{StaticResource BodyLarge}"
+                   TextColor="{StaticResource OnSurfaceVariant}" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
